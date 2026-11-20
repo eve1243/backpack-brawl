@@ -78,6 +78,10 @@ export function rerollShop(state: RunState): RunState {
   };
 }
 
+export function needsRunReset(state: RunState): boolean {
+  const backpackEmpty = state.backpack.every((slot) => slot === null);
+  return state.gold === 0 && backpackEmpty;
+}
 
 /// Warum ein Item im Rucksack nicht verkauft werden kann, oder `null`, wenn es verkauft werden kann.
 export function sellBlocker(state: RunState, slotIndex: number): string | null {

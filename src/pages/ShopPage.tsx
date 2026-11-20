@@ -5,11 +5,11 @@ import { RulesPanel } from "../components/RulesPanel";
 import { RunHeader } from "../components/RunHeader";
 import { Shop } from "../components/Shop";
 import { fightBlocker, searchFailed, startBattle, startSearch, updateRun } from "../game";
-import { buyItem, sellItem, rerollShop } from "../run";
+import { buyItem, needsRunReset, rerollShop, sellItem } from "../run";
 import { useActiveGame } from "../state/GameContext";
 
 export function ShopPage() {
-  const { game, update } = useActiveGame();
+  const { game, update, startNewRun } = useActiveGame();
   const { run, phase } = game;
 
   function handleBuy(offerIndex: number) {
@@ -44,6 +44,20 @@ export function ShopPage() {
   return (
     <>
       <RunHeader run={run} />
+      {needsRunReset(run) && (
+        <section role="alert" className="rounded-lg border border-life bg-panel p-4">
+          <p className="mb-3 font-bold text-life">
+            No Gold and no Item left. Click the button below to start a new run.
+          </p>
+          <button
+            type="button"
+            onClick={startNewRun}
+            className="rounded-md bg-life px-4 py-2 font-bold text-parchment"
+          >
+            🔄 Run neu starten
+          </button>
+        </section>
+      )}
       <FightBar phase={phase} blocker={fightBlocker(game)} error={game.error} onFight={handleFindOpponent} />
 
       {/* While searching, the whole shop/backpack area is disabled so the fighting build can't change. */}
