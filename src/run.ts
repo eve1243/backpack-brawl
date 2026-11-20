@@ -28,16 +28,26 @@ export function firstFreeSlot(state: RunState): number {
 /** Why an offer can't be bought right now, or `null` if it can. */
 export function buyBlocker(state: RunState, offerIndex: number): string | null {
   const itemId = state.shop[offerIndex];
+
+  /// check if the offer is valid
   if (!itemId) return "Already sold";
+  /// check if the player has enough gold to buy the item
   if (state.gold < getItem(itemId).price) return "Not enough gold";
+  /// check if there is a free slot in the backpack
+  if (firstFreeSlot(state) === -1) return "Backpack full";
+
   return null;
 }
 
 /** Buys a shop offer into the first free backpack slot; unchanged state if not allowed. */
 export function buyItem(state: RunState, offerIndex: number): RunState {
   if (buyBlocker(state, offerIndex) !== null) return state;
-  const itemId = state.shop[offerIndex]!;
+
   const slot = firstFreeSlot(state);
+  ///wenn kein freier slot vorhanden ist, return state
+  if (slot === -1) return state;
+
+  const itemId = state.shop[offerIndex]!;
   const backpack = [...state.backpack];
   backpack[slot] = { uid: `item-${state.nextUid}`, itemId };
   const shop = [...state.shop];

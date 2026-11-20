@@ -130,3 +130,5 @@ Die Requirements sind möglichst gleichmäßig aufgeteilt:
 ## B1 weg
 
 Hab zuerst den button eingefügt, um eine Item in einem Slot zu verkaufen. Hatte da aber den button ausversehen außerhalt vom Item, hieß das man leere Slots auch einen button bekommen haben, was zwar nicht geht, aber falsch aussieht und ist.
+
+Gerade kann man auch weiter Items kaufen, auch wenn der rucksack schon voll ist, aber das 5 item wird im rucksack nicht angezeigt, und ist auch in der arena nicht dabei, aber das Gold verschwindet trotzdem nach dem "kauf".
