@@ -6,6 +6,7 @@ export const START_GOLD = 10;
 export const START_LIVES = 3;
 export const WINS_TO_VICTORY = 5;
 export const GOLD_PER_ROUND = 5;
+export const REROLL_COST = 1;
 
 export function newRun(seed: number): RunState {
   const roll = rollShop(seed);
@@ -28,22 +29,95 @@ export function firstFreeSlot(state: RunState): number {
 /** Why an offer can't be bought right now, or `null` if it can. */
 export function buyBlocker(state: RunState, offerIndex: number): string | null {
   const itemId = state.shop[offerIndex];
+
+  /// check if the offer is valid
   if (!itemId) return "Already sold";
+  /// check if the player has enough gold to buy the item
   if (state.gold < getItem(itemId).price) return "Not enough gold";
+  /// check if there is a free slot in the backpack
+  if (firstFreeSlot(state) === -1) return "Backpack full";
+
   return null;
 }
 
 /** Buys a shop offer into the first free backpack slot; unchanged state if not allowed. */
 export function buyItem(state: RunState, offerIndex: number): RunState {
   if (buyBlocker(state, offerIndex) !== null) return state;
-  const itemId = state.shop[offerIndex]!;
+
   const slot = firstFreeSlot(state);
+  ///wenn kein freier slot vorhanden ist, return state
+  if (slot === -1) return state;
+
+  const itemId = state.shop[offerIndex]!;
   const backpack = [...state.backpack];
   backpack[slot] = { uid: `item-${state.nextUid}`, itemId };
   const shop = [...state.shop];
   shop[offerIndex] = null;
   return { ...state, gold: state.gold - getItem(itemId).price, shop, backpack, nextUid: state.nextUid + 1 };
 }
+///Prüft ob der shop gerollt werden kann, wenn nicht gibt es den Grund zurück, ansonsten null
+export function rerollBlocker(state: RunState): string | null {
+  if (state.gold < REROLL_COST) {
+    return "Not enough gold";
+  }
+
+  return null;
+}
+
+///Erstellt neue Angebote im Shop, wenn möglich und zieht ein Gold ab
+export function rerollShop(state: RunState): RunState {
+  if (rerollBlocker(state) !== null) return state;
+
+  const roll = rollShop(state.seed);
+
+  return {
+    ...state,
+    gold: state.gold - REROLL_COST,
+    seed: roll.seed,
+    shop: roll.offers,
+  };
+}
+
+export function needsRunReset(state: RunState): boolean {
+  const backpackEmpty = state.backpack.every((slot) => slot === null);
+  return state.gold === 0 && backpackEmpty;
+}
+
+/// Warum ein Item im Rucksack nicht verkauft werden kann, oder `null`, wenn es verkauft werden kann.
+export function sellBlocker(state: RunState, slotIndex: number): string | null {
+  if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= state.backpack.length) {
+    return "Invalid slot";
+  }
+
+  if (!state.backpack[slotIndex]) {
+    return "Empty slot";
+  }
+
+  return null;
+}
+
+/** Verkaufe das Item im Rucksack für den halben Preis (gerundet).
+  */
+export function sellItem(state: RunState, slotIndex: number): RunState {
+  if (sellBlocker(state, slotIndex) !== null) return state;
+
+  const backpack = [...state.backpack];
+  const soldItem = backpack[slotIndex];
+
+  if (!soldItem) return state;
+
+  const item = getItem(soldItem.itemId);
+  const refund = Math.floor(item.price / 2);
+
+  backpack[slotIndex] = null;
+
+  return {
+    ...state,
+    gold: state.gold + refund,
+    backpack,
+  };
+}
+
 
 export type RunOutcome = "victory" | "defeat";
 

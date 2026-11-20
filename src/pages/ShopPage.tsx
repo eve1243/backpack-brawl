@@ -5,15 +5,27 @@ import { RulesPanel } from "../components/RulesPanel";
 import { RunHeader } from "../components/RunHeader";
 import { Shop } from "../components/Shop";
 import { fightBlocker, searchFailed, startBattle, startSearch, updateRun } from "../game";
-import { buyItem } from "../run";
+import { buyItem, needsRunReset, rerollShop, sellItem } from "../run";
 import { useActiveGame } from "../state/GameContext";
 
 export function ShopPage() {
-  const { game, update } = useActiveGame();
+  const { game, update, startNewRun } = useActiveGame();
   const { run, phase } = game;
 
   function handleBuy(offerIndex: number) {
     update((current) => updateRun(current, (currentRun) => buyItem(currentRun, offerIndex)));
+  }
+
+  function handleSell(slotIndex: number) {
+  update((current) =>
+    updateRun(current, (currentRun) => sellItem(currentRun, slotIndex)),
+    );
+  }
+
+  function handleReroll() {
+  update((current) =>
+    updateRun(current, (currentRun) => rerollShop(currentRun)),
+    );
   }
 
   // Once the opponent is found the phase becomes "battle" and RequireRoute redirects to the battle page.
@@ -32,12 +44,30 @@ export function ShopPage() {
   return (
     <>
       <RunHeader run={run} />
+      {needsRunReset(run) && (
+        <section role="alert" className="rounded-lg border border-life bg-panel p-4">
+          <p className="mb-3 font-bold text-life">
+            No Gold and no Item left. Click the button below to start a new run.
+          </p>
+          <button
+            type="button"
+            onClick={startNewRun}
+            className="rounded-md bg-life px-4 py-2 font-bold text-parchment"
+          >
+            🔄 Run neu starten
+          </button>
+        </section>
+      )}
       <FightBar phase={phase} blocker={fightBlocker(game)} error={game.error} onFight={handleFindOpponent} />
 
       {/* While searching, the whole shop/backpack area is disabled so the fighting build can't change. */}
       <fieldset disabled={phase !== "shop"} className="grid min-w-0 gap-4 disabled:opacity-60 lg:grid-cols-[1fr_16rem_18rem]">
-        <Shop run={run} onBuy={handleBuy} />
-        <Backpack backpack={run.backpack} />
+        <Shop run={run} onBuy={handleBuy}  onReroll={handleReroll}/>
+       <Backpack
+        backpack={run.backpack}
+        run={run}
+        onSell={handleSell}
+        />
         <aside className="flex flex-col gap-4">
           <RulesPanel open={run.round === 1} />
         </aside>
