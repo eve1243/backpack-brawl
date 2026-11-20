@@ -45,6 +45,42 @@ export function buyItem(state: RunState, offerIndex: number): RunState {
   return { ...state, gold: state.gold - getItem(itemId).price, shop, backpack, nextUid: state.nextUid + 1 };
 }
 
+/// Warum ein Item im Rucksack nicht verkauft werden kann, oder `null`, wenn es verkauft werden kann.
+export function sellBlocker(state: RunState, slotIndex: number): string | null {
+  if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= state.backpack.length) {
+    return "Invalid slot";
+  }
+
+  if (!state.backpack[slotIndex]) {
+    return "Empty slot";
+  }
+
+  return null;
+}
+
+/** Verkaufe das Item im Rucksack für den halben Preis (gerundet).
+  */
+export function sellItem(state: RunState, slotIndex: number): RunState {
+  if (sellBlocker(state, slotIndex) !== null) return state;
+
+  const backpack = [...state.backpack];
+  const soldItem = backpack[slotIndex];
+
+  if (!soldItem) return state;
+
+  const item = getItem(soldItem.itemId);
+  const refund = Math.floor(item.price / 2);
+
+  backpack[slotIndex] = null;
+
+  return {
+    ...state,
+    gold: state.gold + refund,
+    backpack,
+  };
+}
+
+
 export type RunOutcome = "victory" | "defeat";
 
 /** `victory` / `defeat` once the run is over, otherwise `null`. */
