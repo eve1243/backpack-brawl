@@ -6,6 +6,7 @@ export const START_GOLD = 10;
 export const START_LIVES = 3;
 export const WINS_TO_VICTORY = 5;
 export const GOLD_PER_ROUND = 5;
+export const REROLL_COST = 1;
 
 export function newRun(seed: number): RunState {
   const roll = rollShop(seed);
@@ -54,6 +55,29 @@ export function buyItem(state: RunState, offerIndex: number): RunState {
   shop[offerIndex] = null;
   return { ...state, gold: state.gold - getItem(itemId).price, shop, backpack, nextUid: state.nextUid + 1 };
 }
+///Prüft ob der shop gerollt werden kann, wenn nicht gibt es den Grund zurück, ansonsten null
+export function rerollBlocker(state: RunState): string | null {
+  if (state.gold < REROLL_COST) {
+    return "Not enough gold";
+  }
+
+  return null;
+}
+
+///Erstellt neue Angebote im Shop, wenn möglich und zieht ein Gold ab
+export function rerollShop(state: RunState): RunState {
+  if (rerollBlocker(state) !== null) return state;
+
+  const roll = rollShop(state.seed);
+
+  return {
+    ...state,
+    gold: state.gold - REROLL_COST,
+    seed: roll.seed,
+    shop: roll.offers,
+  };
+}
+
 
 /// Warum ein Item im Rucksack nicht verkauft werden kann, oder `null`, wenn es verkauft werden kann.
 export function sellBlocker(state: RunState, slotIndex: number): string | null {
