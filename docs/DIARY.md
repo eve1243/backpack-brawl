@@ -127,3 +127,6 @@ Die Requirements sind möglichst gleichmäßig aufgeteilt:
 - nach dem Laden geht das Spiel auf den passenden sicheren Screen zurück
 - so kann man nicht durch Refresh einen Kampf oder Verlust umgehen
 
+## B1 weg
+
+Hab zuerst den button eingefügt, um eine Item in einem Slot zu verkaufen. Hatte da aber den button ausversehen außerhalt vom Item, hieß das man leere Slots auch einen button bekommen haben, was zwar nicht geht, aber falsch aussieht und ist.
