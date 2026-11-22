@@ -1,7 +1,7 @@
 import { CATALOG } from "../items";
 import type { GameState, RunState } from "../types";
 
-const SAVE_KEY = "backpack-brawl-save";
+export const SAVE_KEY = "backpack-brawl-save";
 const SAVE_VERSION = 1;
 
 interface SavedGame {

@@ -134,3 +134,34 @@ Hab zuerst den button eingefügt, um eine Item in einem Slot zu verkaufen. Hatte
 Gerade kann man auch weiter Items kaufen, auch wenn der rucksack schon voll ist, aber das 5 item wird im rucksack nicht angezeigt, und ist auch in der arena nicht dabei, aber das Gold verschwindet trotzdem nach dem "kauf".
 
 Hab gemerkt, wenn ich all mein Gold beim Reroll verbrenne, hab ich keins mehr um mindestens 1 Item zu kaufen. Hab mich dann dazu entschieden, dass wenn diese 2 Fälle zusammen gegeben sind, man einfach das Game restarten kann.
+
+## B6 store
+
+Ich habe mich dazu entschieden, eine laufende Suche nicht zu speichern. Nach einem Refresh kehrt das Spiel in den sicheren Shop-Zustand zurück. Auch die temporäre Auswahl eines Items im Backpack wird nicht gespeichert.
+
+### Gespeicherter Shop-Zustand
+
+- Runde
+- Gold
+- Leben
+- Siege
+- Seed
+- Shop-Angebote
+- komplette Backpack-Anordnung
+- nächste UID
+
+### Gespeicherter Battle-Zustand
+
+- aktuelle Phase `battle`
+- Gegner
+- Battle-Replay
+- aktueller `battle.frame`
+
+Dadurch läuft das Battle am gespeicherten Frame weiter, statt neu gestartet zu werden.
+
+### Gespeicherter Resultat-Zustand
+
+- Phase `finished`
+- verbleibende Leben oder erreichte Siege
+
+Nach einem Refresh wird der passende Screen angezeigt: `/shop`, `/battle` oder `/result`.
