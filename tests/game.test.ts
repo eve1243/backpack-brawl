@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { newGame, updateRun } from "../src/game";
-import { rerollShop } from "../src/run";
+import { moveItem, rerollShop } from "../src/run";
 
 describe("B1 shop phase protection", () => {
   it("allows a reroll in the shop", () => {
@@ -15,6 +15,29 @@ describe("B1 shop phase protection", () => {
     const searching = { ...game, phase: "searching" as const };
 
     const result = updateRun(searching, rerollShop);
+
+    expect(result).toBe(searching);
+  });
+});
+
+// ------ B2 Backpack arrangement phase protection ------
+describe("B2 backpack phase protection", () => {
+  it("allows a backpack move while shopping", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+
+    const result = updateRun(game, (run) => moveItem(run, 0, 3));
+
+    expect(result.run.backpack[0]).toBeNull();
+    expect(result.run.backpack[3]?.uid).toBe("item-1");
+  });
+
+  it("does not move a backpack item while searching", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = { ...game, phase: "searching" as const };
+
+    const result = updateRun(searching, (run) => moveItem(run, 0, 3));
 
     expect(result).toBe(searching);
   });
