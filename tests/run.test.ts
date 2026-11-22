@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buyBlocker,
   buyItem,
+  moveBlocker,
+  moveItem,
   needsRunReset,
   newRun,
   rerollBlocker,
@@ -89,5 +91,51 @@ describe("B1 shop economy", () => {
     state.backpack[0] = { uid: "item-1", itemId: "pot-lid" };
 
     expect(needsRunReset(state)).toBe(false);
+  });
+});
+
+// ------ B2 Backpack arrangement tests ------
+describe("B2 backpack arrangement", () => {
+  it("moves an item into an empty backpack slot", () => {
+    const state = newRun(123);
+    state.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+
+    const result = moveItem(state, 0, 3);
+
+    expect(result.backpack[0]).toBeNull();
+    expect(result.backpack[3]?.uid).toBe("item-1");
+  });
+
+  it("swaps two occupied backpack slots", () => {
+    const state = newRun(123);
+    state.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    state.backpack[2] = { uid: "item-2", itemId: "pot-lid" };
+
+    const result = moveItem(state, 0, 2);
+
+    expect(result.backpack[0]?.uid).toBe("item-2");
+    expect(result.backpack[2]?.uid).toBe("item-1");
+  });
+
+  it("does not move an item from an empty source slot", () => {
+    const state = newRun(123);
+
+    expect(moveBlocker(state, 0, 2)).toBe("Source slot is empty");
+    expect(moveItem(state, 0, 2)).toBe(state);
+  });
+
+  it("does not move to an invalid slot", () => {
+    const state = newRun(123);
+    state.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+
+    expect(moveBlocker(state, 0, state.backpack.length)).toBe("Invalid slot");
+    expect(moveItem(state, 0, state.backpack.length)).toBe(state);
+  });
+
+  it("does not change the backpack when moving to the same slot", () => {
+    const state = newRun(123);
+    state.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+
+    expect(moveItem(state, 0, 0)).toBe(state);
   });
 });

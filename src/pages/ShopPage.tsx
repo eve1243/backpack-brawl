@@ -4,8 +4,8 @@ import { FightBar } from "../components/FightBar";
 import { RulesPanel } from "../components/RulesPanel";
 import { RunHeader } from "../components/RunHeader";
 import { Shop } from "../components/Shop";
-import { fightBlocker, searchFailed, startBattle, startSearch, updateRun } from "../game";
-import { buyItem, needsRunReset, rerollShop, sellItem } from "../run";
+import { fightBlocker, searchFailed, startBattle, startSearch, updateRun} from "../game";
+import { buyItem, needsRunReset, rerollShop, sellItem, moveItem } from "../run";
 import { useActiveGame } from "../state/GameContext";
 
 export function ShopPage() {
@@ -25,6 +25,14 @@ export function ShopPage() {
   function handleReroll() {
   update((current) =>
     updateRun(current, (currentRun) => rerollShop(currentRun)),
+    );
+  }
+
+  function handleMove(fromIndex: number, toIndex: number) {
+    update((current) =>
+      updateRun(current, (currentRun) =>
+        moveItem(currentRun, fromIndex, toIndex),
+      ),
     );
   }
 
@@ -67,6 +75,7 @@ export function ShopPage() {
         backpack={run.backpack}
         run={run}
         onSell={handleSell}
+        onMove = {handleMove}
         />
         <aside className="flex flex-col gap-4">
           <RulesPanel open={run.round === 1} />
