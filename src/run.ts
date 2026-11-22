@@ -26,7 +26,54 @@ export function firstFreeSlot(state: RunState): number {
   return state.backpack.indexOf(null);
 }
 
-/** Why an offer can't be bought right now, or `null` if it can. */
+/** Why an item can't be moved to another backpack slot */
+export function moveBlocker(
+  state: RunState,
+  fromIndex: number,
+  toIndex: number,
+): string | null {
+  if (
+    !Number.isInteger(fromIndex) ||
+    !Number.isInteger(toIndex) ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= state.backpack.length ||
+    toIndex >= state.backpack.length
+  ) {
+    return "Invalid slot";
+  }
+
+  if (!state.backpack[fromIndex]) {
+    return "Source slot is empty";
+  }
+
+  return null;
+}
+
+/**
+ * Moves an item to a free slot or swaps it with the item in an occupied slot.
+ * Returns the unchanged state when the move is not allowed.
+ */
+export function moveItem(
+  state: RunState,
+  fromIndex: number,
+  toIndex: number,
+): RunState {
+  if (moveBlocker(state, fromIndex, toIndex) !== null) return state;
+
+  if (fromIndex === toIndex) return state;
+
+  const backpack = [...state.backpack];
+  const sourceItem = backpack[fromIndex];
+  const targetItem = backpack[toIndex];
+
+  backpack[fromIndex] = targetItem;
+  backpack[toIndex] = sourceItem;
+
+  return { ...state, backpack };
+}
+
+/** Why an offer can't be bought right now. */
 export function buyBlocker(state: RunState, offerIndex: number): string | null {
   const itemId = state.shop[offerIndex];
 
@@ -96,7 +143,7 @@ export function sellBlocker(state: RunState, slotIndex: number): string | null {
   return null;
 }
 
-/** Verkaufe das Item im Rucksack für den halben Preis (gerundet).
+/** Verkaufe das Item im Rucksack für den halben Preis.
   */
 export function sellItem(state: RunState, slotIndex: number): RunState {
   if (sellBlocker(state, slotIndex) !== null) return state;
@@ -117,6 +164,8 @@ export function sellItem(state: RunState, slotIndex: number): RunState {
     backpack,
   };
 }
+
+
 
 
 export type RunOutcome = "victory" | "defeat";
