@@ -134,3 +134,16 @@ Hab zuerst den button eingefügt, um eine Item in einem Slot zu verkaufen. Hatte
 Gerade kann man auch weiter Items kaufen, auch wenn der rucksack schon voll ist, aber das 5 item wird im rucksack nicht angezeigt, und ist auch in der arena nicht dabei, aber das Gold verschwindet trotzdem nach dem "kauf".
 
 Hab gemerkt, wenn ich all mein Gold beim Reroll verbrenne, hab ich keins mehr um mindestens 1 Item zu kaufen. Hab mich dann dazu entschieden, dass wenn diese 2 Fälle zusammen gegeben sind, man einfach das Game restarten kann.
+
+## B3: Status effects
+
+**Gift:** Beide Kämpfer starten bei 0 Stapeln. Gift-Items erhöhen die Stapel beim Gegner bis zum Kampfende. Alle zwei Ticks (1 Sekunde) wirkt nach den Items das Gift auf beide Seiten. Jeder Stapel kostet 1 HP und umgeht Block, auch wenn er gerade erst hinzukam. Erst danach prüfe ich auf K. o. Fallen beide gleichzeitig, verliert der Spieler (laut Spielregel).
+
+**Heilung:** Ein Heil-Item stellt sofort Lebenspunkte wieder her, höchstens so viele, wie dem Träger fehlen. Für Gegner gilt das eigene HP-Maximum. Bei 38/40 HP und 5 Heilung stehen deshalb 2 geheilte HP im Combat Log, bei vollen HP 0.
+
+**Items und Anzeige:** Der Shop zieht insgesamt vier Angebote aus dem erweiterten Katalog. Neu sind: Bitter Root, Viper Fang und Venom Vial für Vergiften. Healing Herb, Field Tonic und Warding Charm fürs Heilen. Für das Replay speichere ich die Stapel pro Tick in `statuses.poison`. Im Log sieht man, welches Item wie viele Giftstapel hinzufügt. Beim nächsten Giftschaden zählen alle Stapel zusammen. Jeder Kämpfer zeigt die Giftstapel und die letzte Heilung mit Zeitpunkt aus den bereits abgespielten Ticks. Das Regelpanel erklärt den Ablauf, die Tooltips nennen Effektwerte und Cooldown.
+
+**Gegner mit Gift und Heilung:**
+
+- **Grave Tinker (Runde 2):** Mit Bitter Root gibt er dem Spieler alle 4 Sekunden einen Giftstapel. Mit Healing Herb heilt er sich alle 2 Sekunden um bis zu 2 HP, höchstens auf seine 36 HP.
+- **Pit Gladiator (Runde 5):** Mit Venom Vial gibt er dem Spieler alle 4 Sekunden zwei Giftstapel. Mit Field Tonic heilt er sich alle 3 Sekunden um bis zu 5 HP, höchstens auf seine 50 HP.
