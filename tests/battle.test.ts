@@ -24,6 +24,19 @@ it("lets the round-two opponent poison the hero and recover lost HP with shop it
   }));
 });
 
+it("lets the Pit Gladiator poison the hero and heal himself in round five", () => {
+  const enemy = opponentForRound(5);
+  expect(enemy.id).toBe("pit-gladiator");
+  const hero = buildFighter(["hunting-bow"], 40);
+  const { events } = simulateBattle(hero, buildOpponentFighter(enemy));
+
+  expect(events).toContainEqual(expect.objectContaining({
+    kind: "poison", source: "opponent", target: "player", itemId: "venom-vial", amount: 2,
+  }));
+  expect(events.some((event) => event.kind === "heal" && event.source === "opponent"
+    && event.itemId === "field-tonic" && event.amount > 0)).toBe(true);
+});
+
 describe("B3 poison", () => {
   it("keeps stacks between ticks and deals damage through block on even ticks", () => {
     const hero = fighter("Hero", [item("Venom", 3, { poison: 3 })]);
