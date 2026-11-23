@@ -30,6 +30,7 @@ const EFFECT_LABELS: [keyof ItemEffects, (n: number) => string][] = [
   ["damage", (n) => `⚔️ ${n} dmg`],
   ["block", (n) => `🛡️ +${n} block`],
   ["poison", (n) => `☠️ +${n} poison`],
+  ["burn", (n) => `🔥 +${n} burn`],
   ["heal", (n) => `💚 heal ${n} HP`],
 ];
 

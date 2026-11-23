@@ -27,6 +27,44 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("B4 Burn in saved replays", () => {
+  function fireReplay() {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "pot-lid" };
+    game.run.nextUid = 2;
+    const battleGame = startBattle(game, {
+      id: "fire-opponent", name: "Fire Opponent", icon: "🔥", hp: 40, round: 1,
+      items: ["ember-torch", "cinder-blade"],
+    });
+    battleGame.battle!.frame = 4;
+    return battleGame;
+  }
+
+  it("resumes on the recorded frame with the original stacks and outcome", () => {
+    const game = fireReplay();
+    expect(game.battle!.result.frames[4].player.statuses.burn).toBe(2);
+    saveGame(game);
+    expect(loadSavedGame()).toEqual(game);
+  });
+
+  it.each([-1, 1.5, null, "2", undefined])("rejects an invalid Burn count (%s) in a new replay", (burn) => {
+    saveGame(fireReplay());
+    const save = JSON.parse(storedValue!);
+    save.game.battle.result.frames[4].player.statuses.burn = burn;
+    storedValue = JSON.stringify(save);
+    expect(loadSavedGame()).toBeNull();
+  });
+
+  it("restores pre-Burn snapshots with zero stacks and preserves replay progress", () => {
+    const game = startBattle(newGame(123), {
+      id: "old-opponent", name: "Old Opponent", icon: "🐢", hp: 40, round: 1, items: ["bitter-root"],
+    });
+    game.battle!.frame = 8;
+    storedValue = JSON.stringify({ version: 1, game }, (key, value) => key === "burn" ? undefined : value);
+    expect(loadSavedGame()).toEqual(game);
+  });
+});
+
 // ------ B6 Save and resume tests ------
 describe("B6 save and resume", () => {
   it("returns null when no save exists", () => {

@@ -1,4 +1,4 @@
-import { HERO_BASE_HP, MAX_TICKS, POISON_INTERVAL_TICKS, TICK_SECONDS } from "./battle";
+import { BURN_DAMAGE_PER_STACK, BURN_DECAY_PER_TICK, BURN_INTERVAL_TICKS, HERO_BASE_HP, MAX_TICKS, POISON_INTERVAL_TICKS, TICK_SECONDS } from "./battle";
 import { GOLD_PER_ROUND, START_GOLD, START_LIVES, WINS_TO_VICTORY } from "./run";
 import { BACKPACK_COLS, BACKPACK_ROWS, SHOP_SIZE } from "./shop";
 import { describeEffects } from "./items";
@@ -13,6 +13,7 @@ const BATTLE_SECONDS = MAX_TICKS * TICK_SECONDS;
 
 /** Tooltip per item effect. */
 export const EFFECT_HELP: Record<keyof ItemEffects, string> = {
+  burn: `Every ${BURN_INTERVAL_TICKS * TICK_SECONDS}s, each Burn stack deals ${BURN_DAMAGE_PER_STACK} damage. Block absorbs damage first, then Burn loses ${BURN_DECAY_PER_TICK} stack.`,
   damage: "Damage: hits the enemy. Block absorbs it first, the rest is lost from HP.",
   block: "Block: absorbs incoming damage until used up. Unused block stays for the rest of the battle.",
   heal: "Heal immediately restores the item owner's HP up to their maximum. At full HP it restores 0.",

@@ -5,6 +5,8 @@ export interface ItemEffects {
   heal?: number;
   /** Stacks applied to the opposing fighter whenever this item fires. */
   poison?: number;
+  /** Burn stacks added when this item fires with its Fire set active. */
+  burn?: number;
 }
 
 export type ItemSetId = "fire" | "guard";
@@ -62,10 +64,10 @@ export interface FighterSnapshot {
   hp: number;
   maxHp: number;
   block: number;
-  statuses: { poison: number };
+  statuses: { poison: number; burn: number };
 }
 
-export type BattleEventKind = "damage" | "block" | "poison" | "poisonDamage" | "heal";
+export type BattleEventKind = "damage" | "block" | "poison" | "poisonDamage" | "burn" | "burnDamage" | "heal";
 
 export interface BattleEvent {
   tick: number;
@@ -75,7 +77,7 @@ export interface BattleEvent {
   target: Side;
   kind: BattleEventKind;
   amount: number;
-  /** Null for periodic damage from accumulated poison stacks. */
+  /** Null for periodic status damage. */
   itemId: string | null;
   message: string;
 }

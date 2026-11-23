@@ -68,6 +68,56 @@ it("lets the Pit Gladiator poison the hero and heal himself in round five", () =
     && event.itemId === "field-tonic" && event.amount > 0)).toBe(true);
 });
 
+describe("B4 Fire set", () => {
+  it("gives three stacks per firing Fire item only to the side with an active set", () => {
+    const hero = buildFighter(["ember-torch", "cinder-blade", "chipped-dagger"], 100);
+    const enemy = buildFighter(["ember-torch"], 100);
+    const { frames } = simulateBattle(hero, enemy);
+
+    expect(frames[4].events.filter((event) => event.kind === "burn")).toMatchObject([
+      { source: "player", target: "opponent", itemId: "ember-torch", amount: 3 },
+    ]);
+    expect(frames[4].opponent.statuses.burn).toBe(2);
+    expect(frames[6].events.filter((event) => event.kind === "burn")).toMatchObject([
+      { source: "player", target: "opponent", itemId: "cinder-blade", amount: 3 },
+    ]);
+    expect(frames[6].opponent.statuses.burn).toBe(4);
+    expect(frames[6].player.statuses.burn).toBe(0);
+  });
+
+  it("hits block first on even ticks, loses one stack per hit and expires", () => {
+    const hero = { ...fighter("Hero", []), startingBlock: 4 };
+    const enemy = fighter("Enemy", [item("Slow flame", 9, { burn: 3 })]);
+    const { frames } = simulateBattle(hero, enemy);
+
+    expect(frames[9].player).toMatchObject({ hp: 40, block: 4, statuses: { burn: 3 } });
+    expect(frames[10].player).toMatchObject({ hp: 38, block: 0, statuses: { burn: 2 } });
+    expect(frames[11].player).toEqual(frames[10].player);
+    expect(frames[12].player).toMatchObject({ hp: 34, statuses: { burn: 1 } });
+    expect(frames[14].player).toMatchObject({ hp: 32, statuses: { burn: 0 } });
+    expect(frames[16].events).toEqual([]);
+  });
+
+  it("resolves poison, then burn on both sides before deciding a knockout", () => {
+    const flame = item("Flame", 2, { poison: 1, burn: 3 });
+    const hero = { ...fighter("Hero", [flame], 1), startingBlock: 8 };
+    const enemy = fighter("Enemy", [flame], 7);
+    const result = simulateBattle(hero, enemy);
+    const frame = result.frames[2];
+
+    expect(frame.events.filter((event) => event.itemId === null)).toMatchObject([
+      { kind: "poisonDamage", target: "player", amount: 1 },
+      { kind: "poisonDamage", target: "opponent", amount: 1 },
+      { kind: "burnDamage", target: "player", amount: 6 },
+      { kind: "burnDamage", target: "opponent", amount: 6 },
+    ]);
+    expect(frame.player).toMatchObject({ hp: 0, block: 2, statuses: { burn: 2 } });
+    expect(frame.opponent.hp).toBe(0);
+    expect(result.winner).toBe("opponent");
+    expect(simulateBattle(hero, enemy)).toEqual(result);
+  });
+});
+
 describe("B3 poison", () => {
   it("keeps stacks between ticks and deals damage through block on even ticks", () => {
     const hero = fighter("Hero", [item("Venom", 3, { poison: 3 })]);

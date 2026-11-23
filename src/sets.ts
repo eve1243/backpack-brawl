@@ -7,10 +7,11 @@ interface ItemSet {
   icon: string;
   requiredItems: number;
   startingBlock?: number;
+  burnOnActivation?: number;
 }
 
 export const ITEM_SETS: ItemSet[] = [
-  { id: "fire", name: "Fire", icon: "🔥", requiredItems: 2 },
+  { id: "fire", name: "Fire", icon: "🔥", requiredItems: 2, burnOnActivation: 3 },
   { id: "guard", name: "Guard", icon: "🛡️", requiredItems: 2, startingBlock: 4 },
 ];
 
