@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { simulateBattle } from "../src/battle";
+import { opponentForRound } from "../server/opponents.js";
+import { buildFighter, buildOpponentFighter, simulateBattle } from "../src/battle";
 import type { Fighter, FighterItem, ItemEffects } from "../src/types";
 
 function item(name: string, cooldown: number, effects: ItemEffects): FighterItem {
@@ -9,6 +10,19 @@ function item(name: string, cooldown: number, effects: ItemEffects): FighterItem
 function fighter(name: string, items: FighterItem[], maxHp = 40): Fighter {
   return { name, items, maxHp };
 }
+
+it("lets the round-two opponent poison the hero and recover lost HP with shop items", () => {
+  const hero = buildFighter(["chipped-dagger"], 40, "Hero");
+  const enemy = buildOpponentFighter(opponentForRound(2));
+  const { events } = simulateBattle(hero, enemy);
+
+  expect(events).toContainEqual(expect.objectContaining({
+    kind: "poison", source: "opponent", target: "player", itemId: "bitter-root",
+  }));
+  expect(events).toContainEqual(expect.objectContaining({
+    kind: "heal", source: "opponent", target: "opponent", itemId: "healing-herb", amount: 2,
+  }));
+});
 
 describe("B3 poison", () => {
   it("keeps stacks between ticks and deals damage through block on even ticks", () => {
