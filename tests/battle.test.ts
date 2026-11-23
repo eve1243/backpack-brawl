@@ -69,6 +69,23 @@ it("lets the Pit Gladiator poison the hero and heal himself in round five", () =
 });
 
 describe("B4 Fire set", () => {
+  it("lets the round-six Ash Golem burn the hero with its equipped Fire items", () => {
+    const opponent = opponentForRound(6);
+    expect(opponent.id).toBe("ash-golem");
+    const hero = buildFighter(["chipped-dagger"], 40, "Hero");
+    const { frames, events } = simulateBattle(hero, buildOpponentFighter(opponent));
+
+    const firstBurn = events.find((event) => event.kind === "burn");
+    expect(firstBurn).toMatchObject({ tick: 4, itemId: "ember-torch", source: "opponent", target: "player", amount: 3 });
+    expect(frames[4].events).toContainEqual(expect.objectContaining({
+      kind: "burnDamage", source: "opponent", target: "player", amount: 6,
+    }));
+    expect(frames[4].player.statuses.burn).toBe(2);
+    expect(events).toContainEqual(expect.objectContaining({
+      kind: "burn", itemId: "forge-hammer", source: "opponent", target: "player", amount: 3,
+    }));
+  });
+
   it("gives three stacks per firing Fire item only to the side with an active set", () => {
     const hero = buildFighter(["ember-torch", "cinder-blade", "chipped-dagger"], 100);
     const enemy = buildFighter(["ember-torch"], 100);
