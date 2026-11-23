@@ -4,6 +4,11 @@ import type { GameState, RunState } from "../types";
 export const SAVE_KEY = "backpack-brawl-save";
 const SAVE_VERSION = 1;
 
+export interface SavedGameLoadResult {
+  game: GameState | null;
+  message: string | null;
+}
+
 interface SavedGame {
   version: number;
   game: GameState;
@@ -90,41 +95,60 @@ function validateGame(value: unknown): value is GameState {
 }
 
 export function loadSavedGame(): GameState | null {
+  return loadSavedGameResult().game;
+}
+
+/** Loads the save and also reports when a save had to be discarded. */
+export function loadSavedGameResult(): SavedGameLoadResult {
   try {
     const stored = localStorage.getItem(SAVE_KEY);
-    if (!stored) return null;
+    if (!stored) return { game: null, message: null };
 
     const parsed: unknown = JSON.parse(stored);
-    if (!isObject(parsed)) return null;
-    if (parsed.version !== SAVE_VERSION) return null;
-    if (!validateGame(parsed.game)) return null;
+    if (!isObject(parsed)) {
+      clearSavedGame();
+      return { game: null, message: "The saved run was invalid and has been discarded." };
+    }
+    if (parsed.version !== SAVE_VERSION) {
+      clearSavedGame();
+      return { game: null, message: "The saved run is from an incompatible version and has been discarded." };
+    }
+    if (!validateGame(parsed.game)) {
+      clearSavedGame();
+      return { game: null, message: "The saved run was invalid and has been discarded." };
+    }
 
     const game = parsed.game;
 
     // Searches are not resumed. The player returns to the last safe shop state.
     if (game.phase === "searching") {
       return {
-        ...game,
-        phase: "shop",
-        battle: null,
-        error: null,
+        game: {
+          ...game,
+          phase: "shop",
+          battle: null,
+          error: null,
+        },
+        message: "A running search was safely cancelled. The saved shop has been restored.",
       };
     }
 
     if (game.phase === "battle" && isObject(game.battle)) {
       const result = game.battle.result;
       if (!isObject(result) || !Array.isArray(result.frames)) {
-        return null;
+        clearSavedGame();
+        return { game: null, message: "The saved battle was invalid and has been discarded." };
       }
 
       if (game.battle.frame >= result.frames.length) {
-        return null;
+        clearSavedGame();
+        return { game: null, message: "The saved battle was invalid and has been discarded." };
       }
     }
 
-    return game;
+    return { game, message: null };
   } catch {
-    return null;
+    return { game: null, message: "The saved run could not be read and has been discarded." };
   }
 }
 
@@ -149,5 +173,9 @@ export function saveGame(game: GameState): void {
 }
 
 export function clearSavedGame(): void {
-  localStorage.removeItem(SAVE_KEY);
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {
+    // Storage can be unavailable; the game is still usable.
+  }
 }

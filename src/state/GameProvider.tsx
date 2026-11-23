@@ -2,13 +2,15 @@ import { useState, type ReactNode, useEffect } from "react";
 import { newGame } from "../game";
 import type { GameState } from "../types";
 import { GameContext, type GameContextValue } from "./GameContext";
-import { loadSavedGame, saveGame } from "./save";
+import { loadSavedGameResult, saveGame } from "./save";
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 32);
 
 /** Holds the game state for all routes, so it survives navigating between pages. */
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [game, setGame] = useState<GameState | null>(() => loadSavedGame());
+  const [initialLoad] = useState(() => loadSavedGameResult());
+  const [game, setGame] = useState<GameState | null>(initialLoad.game);
+  const [saveMessage, setSaveMessage] = useState<string | null>(initialLoad.message);
 
   useEffect(() => {
     if(game) saveGame(game);
@@ -16,6 +18,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
  const value: GameContextValue = {
     game,
+    saveMessage,
+    clearSaveMessage: () => setSaveMessage(null),
     startNewRun: () =>
       setGame(newGame(randomSeed())),
     update: (transition) =>

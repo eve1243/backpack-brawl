@@ -1,7 +1,10 @@
 import { Link, Outlet } from "react-router";
 import { ROUTES } from "../game";
+import { useGame } from "../state/GameContext";
 
 export function Layout() {
+  const { saveMessage, clearSaveMessage } = useGame();
+
   return (
     <div className="mx-auto flex min-h-screen max-w-6xl flex-col px-4">
       <header className="flex items-center justify-between border-b-2 border-panel-edge py-4">
@@ -13,6 +16,21 @@ export function Layout() {
       </header>
 
       <main className="flex flex-1 flex-col gap-4 py-6">
+        {saveMessage && (
+          <section
+            role="alert"
+            className="flex items-center justify-between gap-3 rounded-lg border border-gold bg-panel px-4 py-3"
+          >
+            <p>{saveMessage}</p>
+            <button
+              type="button"
+              onClick={clearSaveMessage}
+              className="rounded-md border border-panel-edge px-3 py-1 text-sm hover:bg-panel-edge/40"
+            >
+              Close
+            </button>
+          </section>
+        )}
         <Outlet />
       </main>
 

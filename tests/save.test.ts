@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { newGame, startBattle } from "../src/game";
-import { loadSavedGame, SAVE_KEY, saveGame } from "../src/state/save";
+import {
+  loadSavedGame,
+  loadSavedGameResult,
+  SAVE_KEY,
+  saveGame,
+} from "../src/state/save";
 
 let storedValue: string | null;
 
@@ -56,7 +61,12 @@ describe("B6 save and resume", () => {
   it("does not restore an invalid JSON save", () => {
     storedValue = "{ broken json";
 
-    expect(loadSavedGame()).toBeNull();
+    const result = loadSavedGameResult();
+
+    expect(result.game).toBeNull();
+    expect(result.message).toBe(
+      "The saved run could not be read and has been discarded.",
+    );
   });
 
   it("does not restore a save with invalid run values", () => {
