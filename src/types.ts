@@ -1,6 +1,8 @@
 export interface ItemEffects {
   damage?: number;
   block?: number;
+  /** HP restored to the item owner when it fires, up to their max HP. */
+  heal?: number;
   /** Stacks applied to the opposing fighter whenever this item fires. */
   poison?: number;
 }
@@ -60,7 +62,7 @@ export interface FighterSnapshot {
   statuses: { poison: number };
 }
 
-export type BattleEventKind = "damage" | "block" | "poison" | "poisonDamage";
+export type BattleEventKind = "damage" | "block" | "poison" | "poisonDamage" | "heal";
 
 export interface BattleEvent {
   tick: number;

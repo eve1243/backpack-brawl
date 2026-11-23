@@ -134,7 +134,7 @@ function resolveItem(
   side: Side,
   emit: (event: Omit<BattleEvent, "tick">) => void,
 ) {
-  const { damage, block, poison } = item.effects;
+  const { damage, block, poison, heal } = item.effects;
   const base = { source: side, itemId: item.itemId };
   const enemySide = other(side);
 
@@ -154,6 +154,14 @@ function resolveItem(
     emit({
       ...base, target: enemySide, kind: "poison", amount: poison,
       message: `${item.name} poisons ${enemy.fighter.name} (+${poison}, total ${enemy.poison})`,
+    });
+  }
+  if (heal) {
+    const restored = Math.min(heal, self.fighter.maxHp - self.hp);
+    self.hp += restored;
+    emit({
+      ...base, target: side, kind: "heal", amount: restored,
+      message: `${item.name} restores ${restored} HP to ${self.fighter.name}`,
     });
   }
 }

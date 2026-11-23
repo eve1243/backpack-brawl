@@ -14,6 +14,7 @@ const BATTLE_SECONDS = MAX_TICKS * TICK_SECONDS;
 export const EFFECT_HELP: Record<keyof ItemEffects, string> = {
   damage: "Damage: hits the enemy. Block absorbs it first, the rest is lost from HP.",
   block: "Block: absorbs incoming damage until used up. Unused block stays for the rest of the battle.",
+  heal: "Heal: restores the item owner's HP up to their own maximum.",
   poison: `Poison: each stack deals 1 damage every ${POISON_INTERVAL_TICKS * TICK_SECONDS}s, ignoring block.`,
 };
 
