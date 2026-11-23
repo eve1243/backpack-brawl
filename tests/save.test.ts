@@ -110,6 +110,58 @@ describe("B6 save and resume", () => {
     expect(restored?.battle?.frame).toBe(3);
   });
 
+  it("does not restore a battle frame outside the replay", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const battleGame = startBattle(game, {
+      id: "test-opponent",
+      name: "Test Opponent",
+      icon: "🐢",
+      hp: 25,
+      round: 1,
+      items: ["chipped-dagger"],
+    });
+
+    battleGame.battle!.frame = 999;
+    saveGame(battleGame);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
+  it("does not restore a battle for a different round", () => {
+    const game = newGame(123);
+    game.run.round = 3;
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const battleGame = startBattle(game, {
+      id: "test-opponent",
+      name: "Test Opponent",
+      icon: "🐢",
+      hp: 25,
+      round: 1,
+      items: ["chipped-dagger"],
+    });
+
+    saveGame(battleGame);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
+  it("restores a finished victory and rejects an unfinished finished state", () => {
+    const victory = newGame(123);
+    victory.phase = "finished";
+    victory.run.wins = 5;
+    saveGame(victory);
+
+    expect(loadSavedGame()?.phase).toBe("finished");
+
+    const unfinished = newGame(123);
+    unfinished.phase = "finished";
+    unfinished.run.wins = 2;
+    saveGame(unfinished);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
   it("stores the save under the B6 save key", () => {
     saveGame(newGame(123));
 

@@ -1,4 +1,5 @@
 import { CATALOG } from "../items";
+import { runOutcome } from "../run";
 import type { GameState, RunState } from "../types";
 
 export const SAVE_KEY = "backpack-brawl-save";
@@ -83,10 +84,26 @@ function validateGame(value: unknown): value is GameState {
     return false;
   }
 
-  if (value.phase === "battle") {
+  if (value.phase === "finished") {
+    if (value.battle !== null) return false;
+    if (runOutcome(value.run) === null) return false;
+  } else if (value.phase === "battle") {
     const battle = value.battle;
     if (!isObject(battle)) return false;
     if (!isInteger(battle.frame) || battle.frame < 0) return false;
+
+    const opponent = battle.opponent;
+    if (!isObject(opponent)) return false;
+    if (!isInteger(opponent.round) || opponent.round !== value.run.round) {
+      return false;
+    }
+
+    const result = battle.result;
+    if (!isObject(result)) return false;
+    if (!Array.isArray(result.frames) || result.frames.length === 0) {
+      return false;
+    }
+    if (battle.frame >= result.frames.length) return false;
   } else if (value.battle !== null) {
     return false;
   }

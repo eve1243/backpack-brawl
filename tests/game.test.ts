@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newGame, updateRun } from "../src/game";
+import { newGame, showFrame, startBattle, updateRun } from "../src/game";
 import { moveItem, rerollShop } from "../src/run";
 
 describe("B1 shop phase protection", () => {
@@ -40,5 +40,27 @@ describe("B2 backpack phase protection", () => {
     const result = updateRun(searching, (run) => moveItem(run, 0, 3));
 
     expect(result).toBe(searching);
+  });
+});
+
+// ------ B6 replay result protection ------
+describe("B6 replay result protection", () => {
+  it("applies a battle result only once", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const battling = startBattle(game, {
+      id: "test-opponent",
+      name: "Test Opponent",
+      icon: "🐢",
+      hp: 25,
+      round: 1,
+      items: ["chipped-dagger"],
+    });
+
+    const finished = showFrame(battling, Infinity);
+    const shownAgain = showFrame(finished, Infinity);
+
+    expect(shownAgain.run.wins).toBe(finished.run.wins);
+    expect(shownAgain.run.lives).toBe(finished.run.lives);
   });
 });
