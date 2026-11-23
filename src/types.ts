@@ -7,11 +7,14 @@ export interface ItemEffects {
   poison?: number;
 }
 
+export type ItemSetId = "fire" | "guard";
+
 export interface ItemDef {
   id: string;
   name: string;
   icon: string;
   price: number;
+  setId?: ItemSetId;
   /** Cooldown in battle ticks (1 tick = 0.5 s). */
   cooldown: number;
   effects: ItemEffects;
