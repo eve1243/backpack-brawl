@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { buildPlayerFighter } from "../src/battle";
 import {
   buyBlocker,
   buyItem,
@@ -10,6 +11,28 @@ import {
   rerollShop,
   sellItem,
 } from "../src/run";
+
+describe("B3 shop items", () => {
+  it("offers at least three distinct poison items and three healing items that can be equipped", () => {
+    const poisonItems = new Set<string>();
+    const healItems = new Set<string>();
+
+    for (let seed = 0; seed < 32; seed++) {
+      const run = newRun(seed);
+      run.shop.forEach((offer, index) => {
+        if (buyBlocker(run, index)) return;
+        const purchase = buyItem(run, index);
+        const [equipped] = buildPlayerFighter(purchase.backpack).items;
+        expect(equipped.itemId).toBe(offer);
+        if (equipped.effects.poison) poisonItems.add(equipped.itemId);
+        if (equipped.effects.heal) healItems.add(equipped.itemId);
+      });
+    }
+
+    expect(poisonItems.size).toBeGreaterThanOrEqual(3);
+    expect(healItems.size).toBeGreaterThanOrEqual(3);
+  });
+});
 
 describe("B1 shop economy", () => {
   it("sells an item for half of its price rounded down", () => {
