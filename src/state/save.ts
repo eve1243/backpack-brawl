@@ -90,6 +90,25 @@ function validateBattle(battle: unknown, round: number): boolean {
     return false;
   }
 
+  // Check poison stacks in every saved battle frame.
+  for (const frame of battle.result.frames) {
+    if (!isObject(frame)) return false;
+    if (!validatePoisonSnapshot(frame.player)) return false;
+    if (!validatePoisonSnapshot(frame.opponent)) return false;
+  }
+
+  return true;
+}
+
+function validatePoisonSnapshot(snapshot: unknown): boolean {
+  if (!isObject(snapshot)) return false;
+  if (!isWholeNumber(snapshot.hp) || snapshot.hp < 0) return false;
+  if (!isWholeNumber(snapshot.maxHp) || snapshot.maxHp <= 0) return false;
+  if (!isWholeNumber(snapshot.block) || snapshot.block < 0) return false;
+  if (!isObject(snapshot.statuses)) return false;
+  if (!isWholeNumber(snapshot.statuses.poison)) return false;
+  if (snapshot.statuses.poison < 0) return false;
+
   return true;
 }
 

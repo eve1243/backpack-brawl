@@ -242,6 +242,28 @@ describe("B6 save and resume", () => {
     expect(loadSavedGame()).toBeNull();
   });
 
+  it("rejects negative poison stacks in a battle frame", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+
+    const battleGame = startBattle(game, {
+      id: "test-opponent",
+      name: "Test Opponent",
+      icon: "🐢",
+      hp: 25,
+      round: 1,
+      items: ["bitter-root"],
+    });
+
+    if (battleGame.battle) {
+      battleGame.battle.result.frames[0].opponent.statuses.poison = -1;
+    }
+
+    saveGame(battleGame);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
   it("stores the save under the B6 save key", () => {
     saveGame(newGame(123));
 
