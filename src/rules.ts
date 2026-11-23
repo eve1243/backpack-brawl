@@ -1,7 +1,8 @@
 import { HERO_BASE_HP, MAX_TICKS, POISON_INTERVAL_TICKS, TICK_SECONDS } from "./battle";
 import { GOLD_PER_ROUND, START_GOLD, START_LIVES, WINS_TO_VICTORY } from "./run";
 import { BACKPACK_COLS, BACKPACK_ROWS, SHOP_SIZE } from "./shop";
-import type { ItemEffects } from "./types";
+import { describeEffects } from "./items";
+import type { ItemDef, ItemEffects } from "./types";
 
 /**
  * Player-facing explanations of the rules. Built from the game constants so
@@ -14,9 +15,14 @@ const BATTLE_SECONDS = MAX_TICKS * TICK_SECONDS;
 export const EFFECT_HELP: Record<keyof ItemEffects, string> = {
   damage: "Damage: hits the enemy. Block absorbs it first, the rest is lost from HP.",
   block: "Block: absorbs incoming damage until used up. Unused block stays for the rest of the battle.",
-  heal: "Heal: restores the item owner's HP up to their own maximum.",
-  poison: `Poison: each stack deals 1 damage every ${POISON_INTERVAL_TICKS * TICK_SECONDS}s, ignoring block.`,
+  heal: "Heal immediately restores the item owner's HP up to their maximum. At full HP it restores 0.",
+  poison: `Poison stacks on the opposing fighter until the battle ends. Every ${POISON_INTERVAL_TICKS * TICK_SECONDS}s of battle time, each stack deals 1 damage directly to HP, ignoring block.`,
 };
+
+export function itemTooltip(item: Pick<ItemDef, "name" | "cooldown" | "effects">): string {
+  const effects = describeEffects(item.effects).map(({ effect, label }) => `${label} — ${EFFECT_HELP[effect]}`);
+  return [item.name, ...effects, `Activates every ${item.cooldown * TICK_SECONDS}s.`].join("\n");
+}
 
 export const COOLDOWN_HELP = `Cooldown: the item fires every time this much battle time has passed (1 tick = ${TICK_SECONDS} s).`;
 
@@ -54,8 +60,16 @@ export const RULES: RuleSection[] = [
     title: "⚔️ Battle",
     rules: [
       `Battles run on their own. Your hero has ${HERO_BASE_HP} HP; every item fires whenever its cooldown is up.`,
-      `Damage hits block first; only the rest is lost from HP. Unused block stays for the rest of the battle.`,
+      `Direct item damage hits block first. Only the rest is lost from HP. Unused block stays for the rest of the battle.`,
       `Knock the enemy out to win. ${STATUS_HELP.timer} If both fall at once, you lose.`,
+    ],
+  },
+  {
+    title: "☠️ Poison & healing",
+    rules: [
+      EFFECT_HELP.poison,
+      "Items activate first. Newly added stacks count on the same poison tick. Both fighters take poison damage before knockouts are decided.",
+      EFFECT_HELP.heal,
     ],
   },
 ];

@@ -96,7 +96,7 @@ export function simulateBattle(player: Fighter, opponent: Fighter): BattleResult
         victim.hp -= victim.poison;
         emit({
           source: other(target), target, kind: "poisonDamage", amount: victim.poison, itemId: null,
-          message: `Poison deals ${victim.poison} damage to ${victim.fighter.name}`,
+          message: `Poison deals ${victim.poison} damage to ${victim.fighter.name}, ignoring block`,
         });
       }
     }
@@ -153,7 +153,7 @@ function resolveItem(
     enemy.poison += poison;
     emit({
       ...base, target: enemySide, kind: "poison", amount: poison,
-      message: `${item.name} poisons ${enemy.fighter.name} (+${poison}, total ${enemy.poison})`,
+      message: `${item.name} adds poison to ${enemy.fighter.name} (+${poison}, total stacks: ${enemy.poison})`,
     });
   }
   if (heal) {

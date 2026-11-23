@@ -1,6 +1,6 @@
 import { TICK_SECONDS, MAX_TICKS } from "../battle";
 import { getItem } from "../items";
-import { STATUS_HELP } from "../rules";
+import { EFFECT_HELP, itemTooltip, STATUS_HELP } from "../rules";
 import type { BattleEvent, BattleEventKind, BattleReplay, Fighter, FighterSnapshot, Side } from "../types";
 
 interface BattleViewProps {
@@ -20,6 +20,7 @@ export function BattleView({ battle, done, continueLabel, onSkip, onContinue }: 
     .flatMap((f) => f.events)
     .reverse();
   const won = result.winner === "player";
+  const lastHeal = (side: Side) => log.find((event) => event.kind === "heal" && event.target === side);
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-panel-edge bg-panel p-4">
@@ -33,8 +34,8 @@ export function BattleView({ battle, done, continueLabel, onSkip, onContinue }: 
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FighterPanel side="player" icon="🧝" fighter={battle.player} snapshot={frame.player} />
-        <FighterPanel side="opponent" icon={opponent.icon} fighter={battle.enemy} snapshot={frame.opponent} />
+        <FighterPanel side="player" icon="🧝" fighter={battle.player} snapshot={frame.player} lastHeal={lastHeal("player")} />
+        <FighterPanel side="opponent" icon={opponent.icon} fighter={battle.enemy} snapshot={frame.opponent} lastHeal={lastHeal("opponent")} />
       </div>
 
       {done ? (
@@ -91,9 +92,11 @@ export function BattleView({ battle, done, continueLabel, onSkip, onContinue }: 
 /** Hero actions | time | enemy actions. */
 const LOG_ROW = "grid grid-cols-[1fr_auto_1fr] items-start gap-2";
 
-/** Text colour per event: damage red, everything else neutral. */
 const EVENT_COLOUR: Partial<Record<BattleEventKind, string>> = {
   damage: "text-life",
+  poison: "text-violet-300",
+  poisonDamage: "text-violet-200",
+  heal: "text-emerald-300",
 };
 
 function LogLine({ event }: { event: BattleEvent }) {
@@ -120,9 +123,10 @@ interface FighterPanelProps {
   icon: string;
   fighter: Fighter;
   snapshot: FighterSnapshot;
+  lastHeal: BattleEvent | undefined;
 }
 
-function FighterPanel({ side, icon, fighter, snapshot }: FighterPanelProps) {
+function FighterPanel({ side, icon, fighter, snapshot, lastHeal }: FighterPanelProps) {
   const { hp, maxHp, block } = snapshot;
   const knockedOut = hp <= 0;
 
@@ -141,9 +145,18 @@ function FighterPanel({ side, icon, fighter, snapshot }: FighterPanelProps) {
       <Bar label="HP" value={hp} max={maxHp} text={`${hp} / ${maxHp}`} colour="bg-life" help={STATUS_HELP.hp} />
       <Bar label="Block" value={block} max={maxHp} text={`🛡️ ${block}`} colour="bg-block" help={STATUS_HELP.block} />
 
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <span className="text-violet-300" title={EFFECT_HELP.poison}>☠️ Poison stacks: {snapshot.statuses?.poison ?? 0}</span>
+        {lastHeal && (
+          <span className="text-emerald-300" title={EFFECT_HELP.heal}>
+            💚 Last heal: +{lastHeal.amount} HP at {(lastHeal.tick * TICK_SECONDS).toFixed(1)}s
+          </span>
+        )}
+      </div>
+
       <ul className="flex flex-wrap gap-1" aria-label="Items">
         {fighter.items.map((item, index) => (
-          <li key={index} title={item.name} className="rounded bg-ink/50 px-1.5 py-0.5 text-xl">
+          <li key={index} aria-label={item.name} title={itemTooltip(item)} className="rounded bg-ink/50 px-1.5 py-0.5 text-xl">
             {item.icon}
           </li>
         ))}
