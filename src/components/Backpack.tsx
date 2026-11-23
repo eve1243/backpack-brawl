@@ -1,16 +1,9 @@
-import { TICK_SECONDS } from "../battle";
-import { describeEffects, getItem } from "../items";
+import { getItem } from "../items";
+import { itemTooltip } from "../rules";
 import { BACKPACK_COLS } from "../shop";
-import type { Backpack as BackpackSlots, ItemDef, RunState } from "../types";
+import type { Backpack as BackpackSlots, RunState } from "../types";
 import {sellBlocker} from "../run";
 import { useState } from "react";
-/// props: backpack slots to display
-
-
-
-/** Hover text for a backpack slot: name, effects and cooldown. */
-const tooltip = (item: ItemDef) =>
-  [item.name, ...describeEffects(item.effects).map(({ label }) => label), `⏱️ every ${item.cooldown * TICK_SECONDS}s`].join("\n");
 
 export function Backpack({
   backpack,
@@ -66,7 +59,7 @@ export function Backpack({
             <li
               key={slot?.uid ?? `empty-${index}`}
               onClick={() => handleSlotClick(index)}
-              title={item ? tooltip(item) : undefined}
+              title={item ? itemTooltip(item) : undefined}
               aria-label={item ? item.name : `Empty slot ${index + 1}`}
               className={[
                 "flex aspect-square flex-col items-center justify-center gap-1 rounded-md border-2 p-1",

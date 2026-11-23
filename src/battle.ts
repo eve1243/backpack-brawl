@@ -4,6 +4,7 @@ import type { Backpack, BattleEvent, BattleResult, Fighter, FighterItem, Fighter
 
 /** Seconds per battle tick. */
 export const TICK_SECONDS = 0.5;
+export const POISON_INTERVAL_TICKS = 2;
 /** Battles that last longer are decided by the timeout rule. */
 export const MAX_TICKS = 60;
 export const HERO_BASE_HP = 40;
@@ -30,6 +31,7 @@ interface FighterState {
   fighter: Fighter;
   hp: number;
   block: number;
+  poison: number;
   /** Ticks each item has charged towards its cooldown. */
   charge: number[];
 }
@@ -40,6 +42,7 @@ const snapshot = (s: FighterState): FighterSnapshot => ({
   hp: Math.max(0, s.hp),
   maxHp: s.fighter.maxHp,
   block: s.block,
+  statuses: { poison: s.poison },
 });
 
 const isDown = (s: FighterState) => s.hp <= 0;
@@ -52,7 +55,8 @@ const isDown = (s: FighterState) => s.hp <= 0;
  * 1. Each fighter charges all items by one tick; items whose charge reaches their cooldown fire.
  * 2. Fired items resolve (player first, then opponent). Both sides fire "simultaneously":
  *    which items fire is decided before any effect is applied.
- * After step 2 the battle ends if someone is down; if both are down, the player loses.
+ * 3. On every second tick, both sides take poison damage for all their stacks, including new ones.
+ * After all effects the battle ends if someone is down; if both are down, the player loses.
  * After `MAX_TICKS` the higher HP percentage wins; a tie is a player loss.
  */
 export function simulateBattle(player: Fighter, opponent: Fighter): BattleResult {
@@ -85,6 +89,17 @@ export function simulateBattle(player: Fighter, opponent: Fighter): BattleResult
     for (const side of ["player", "opponent"] as const) {
       for (const item of fired[side]) resolveItem(item, state[side], state[other(side)], side, emit);
     }
+    if (tick % POISON_INTERVAL_TICKS === 0) {
+      for (const target of ["player", "opponent"] as const) {
+        const victim = state[target];
+        if (victim.poison === 0) continue;
+        victim.hp -= victim.poison;
+        emit({
+          source: other(target), target, kind: "poisonDamage", amount: victim.poison, itemId: null,
+          message: `Poison deals ${victim.poison} damage to ${victim.fighter.name}, ignoring block`,
+        });
+      }
+    }
     winner = knockoutWinner();
 
     frames.push({ tick, player: snapshot(state.player), opponent: snapshot(state.opponent), events: tickEvents });
@@ -96,7 +111,7 @@ export function simulateBattle(player: Fighter, opponent: Fighter): BattleResult
 }
 
 function initState(fighter: Fighter): FighterState {
-  return { fighter, hp: fighter.maxHp, block: 0, charge: fighter.items.map(() => 0) };
+  return { fighter, hp: fighter.maxHp, block: 0, poison: 0, charge: fighter.items.map(() => 0) };
 }
 
 /** Advances one tick of cooldowns and returns the items that fire this tick. */
@@ -119,7 +134,7 @@ function resolveItem(
   side: Side,
   emit: (event: Omit<BattleEvent, "tick">) => void,
 ) {
-  const { damage, block } = item.effects;
+  const { damage, block, poison, heal } = item.effects;
   const base = { source: side, itemId: item.itemId };
   const enemySide = other(side);
 
@@ -133,6 +148,21 @@ function resolveItem(
   if (block) {
     self.block += block;
     emit({ ...base, target: side, kind: "block", amount: block, message: `${item.name} grants ${self.fighter.name} ${block} block` });
+  }
+  if (poison) {
+    enemy.poison += poison;
+    emit({
+      ...base, target: enemySide, kind: "poison", amount: poison,
+      message: `${item.name} adds poison to ${enemy.fighter.name} (+${poison}, total stacks: ${enemy.poison})`,
+    });
+  }
+  if (heal) {
+    const restored = Math.min(heal, self.fighter.maxHp - self.hp);
+    self.hp += restored;
+    emit({
+      ...base, target: side, kind: "heal", amount: restored,
+      message: `${item.name} restores ${restored} HP to ${self.fighter.name}`,
+    });
   }
 }
 
