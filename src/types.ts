@@ -1,6 +1,8 @@
 export interface ItemEffects {
   damage?: number;
   block?: number;
+  /** Stacks applied to the opposing fighter whenever this item fires. */
+  poison?: number;
 }
 
 export interface ItemDef {
@@ -55,9 +57,10 @@ export interface FighterSnapshot {
   hp: number;
   maxHp: number;
   block: number;
+  statuses: { poison: number };
 }
 
-export type BattleEventKind = "damage" | "block";
+export type BattleEventKind = "damage" | "block" | "poison" | "poisonDamage";
 
 export interface BattleEvent {
   tick: number;
@@ -67,8 +70,8 @@ export interface BattleEvent {
   target: Side;
   kind: BattleEventKind;
   amount: number;
-  /** Item that triggered the event. */
-  itemId: string;
+  /** Null for periodic damage from accumulated poison stacks. */
+  itemId: string | null;
   message: string;
 }
 

@@ -1,0 +1,54 @@
+import { describe, expect, it } from "vitest";
+import { simulateBattle } from "../src/battle";
+import type { Fighter, FighterItem, ItemEffects } from "../src/types";
+
+function item(name: string, cooldown: number, effects: ItemEffects): FighterItem {
+  return { itemId: name, name, icon: "", cooldown, effects };
+}
+
+function fighter(name: string, items: FighterItem[], maxHp = 40): Fighter {
+  return { name, items, maxHp };
+}
+
+describe("B3 poison", () => {
+  it("keeps stacks between ticks and deals damage through block on even ticks", () => {
+    const hero = fighter("Hero", [item("Venom", 3, { poison: 3 })]);
+    const enemy = fighter("Enemy", [item("Shield", 3, { block: 8 })]);
+    const { frames } = simulateBattle(hero, enemy);
+
+    expect(frames[0].opponent.statuses.poison).toBe(0);
+    expect(frames[2].events).toEqual([]);
+    expect(frames[3].opponent).toMatchObject({ hp: 40, block: 8, statuses: { poison: 3 } });
+    expect(frames[4].opponent).toMatchObject({ hp: 37, block: 8, statuses: { poison: 3 } });
+    expect(frames[5].opponent).toEqual(frames[4].opponent);
+    expect(frames[6].opponent).toMatchObject({ hp: 31, block: 16, statuses: { poison: 6 } });
+  });
+
+  it("combines stacks from multiple enemy items before one damage event against the hero", () => {
+    const enemy = fighter("Enemy", [
+      item("Fang", 2, { poison: 1 }),
+      item("Venom", 2, { poison: 2 }),
+    ]);
+    const { frames } = simulateBattle(fighter("Hero", []), enemy);
+
+    expect(frames[2].player.hp).toBe(37);
+    expect(frames[2].opponent.statuses.poison).toBe(0);
+    expect(frames[2].events).toMatchObject([
+      { kind: "poison", source: "opponent", target: "player", itemId: "Fang", amount: 1 },
+      { kind: "poison", source: "opponent", target: "player", itemId: "Venom", amount: 2 },
+      { kind: "poisonDamage", source: "opponent", target: "player", itemId: null, amount: 3 },
+    ]);
+  });
+
+  it("damages both poisoned fighters before deciding a simultaneous knockout", () => {
+    const venom = item("Venom", 2, { poison: 1 });
+    const hero = fighter("Hero", [venom], 1);
+    const enemy = fighter("Enemy", [venom], 1);
+    const result = simulateBattle(hero, enemy);
+
+    expect(result.frames.at(-1)).toMatchObject({ tick: 2, player: { hp: 0 }, opponent: { hp: 0 } });
+    expect(result.reason).toBe("knockout");
+    expect(result.winner).toBe("opponent");
+    expect(simulateBattle(hero, enemy)).toEqual(result);
+  });
+});

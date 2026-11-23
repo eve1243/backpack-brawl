@@ -97,7 +97,7 @@ const EVENT_COLOUR: Partial<Record<BattleEventKind, string>> = {
 };
 
 function LogLine({ event }: { event: BattleEvent }) {
-  const icon = getItem(event.itemId).icon;
+  const icon = event.itemId === null ? "☠️" : getItem(event.itemId).icon;
   const byPlayer = event.source === "player";
   const text = (
     <span className={`flex gap-1.5 ${byPlayer ? "" : "flex-row-reverse text-right"} ${EVENT_COLOUR[event.kind] ?? ""}`}>

@@ -1,4 +1,4 @@
-import { HERO_BASE_HP, MAX_TICKS, TICK_SECONDS } from "./battle";
+import { HERO_BASE_HP, MAX_TICKS, POISON_INTERVAL_TICKS, TICK_SECONDS } from "./battle";
 import { GOLD_PER_ROUND, START_GOLD, START_LIVES, WINS_TO_VICTORY } from "./run";
 import { BACKPACK_COLS, BACKPACK_ROWS, SHOP_SIZE } from "./shop";
 import type { ItemEffects } from "./types";
@@ -14,6 +14,7 @@ const BATTLE_SECONDS = MAX_TICKS * TICK_SECONDS;
 export const EFFECT_HELP: Record<keyof ItemEffects, string> = {
   damage: "Damage: hits the enemy. Block absorbs it first, the rest is lost from HP.",
   block: "Block: absorbs incoming damage until used up. Unused block stays for the rest of the battle.",
+  poison: `Poison: each stack deals 1 damage every ${POISON_INTERVAL_TICKS * TICK_SECONDS}s, ignoring block.`,
 };
 
 export const COOLDOWN_HELP = `Cooldown: the item fires every time this much battle time has passed (1 tick = ${TICK_SECONDS} s).`;
