@@ -16,54 +16,78 @@ interface SavedGame {
   savedAt: number;
 }
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
+// Small helper functions make the save validation easier to read.
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
 
-const isInteger = (value: unknown): value is number =>
-  typeof value === "number" && Number.isInteger(value);
+function isWholeNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value);
+}
 
-const itemExists = (itemId: unknown): itemId is string =>
-  typeof itemId === "string" && CATALOG.some((item) => item.id === itemId);
+function itemExists(itemId: unknown): itemId is string {
+  if (typeof itemId !== "string") return false;
+  return CATALOG.some((item) => item.id === itemId);
+}
 
 function validateRun(value: unknown): value is RunState {
   if (!isObject(value)) return false;
 
-  const {
-    round,
-    gold,
-    lives,
-    wins,
-    seed,
-    shop,
-    backpack,
-    nextUid,
-  } = value;
+  if (!isWholeNumber(value.round) || value.round < 1) return false;
+  if (!isWholeNumber(value.gold) || value.gold < 0) return false;
+  if (!isWholeNumber(value.lives) || value.lives < 0 || value.lives > 3) return false;
+  if (!isWholeNumber(value.wins) || value.wins < 0 || value.wins > 5) return false;
+  if (!isWholeNumber(value.seed) || value.seed < 0) return false;
+  if (!isWholeNumber(value.nextUid) || value.nextUid < 1) return false;
 
-  if (!isInteger(round) || round < 1) return false;
-  if (!isInteger(gold) || gold < 0) return false;
-  if (!isInteger(lives) || lives < 0 || lives > 3) return false;
-  if (!isInteger(wins) || wins < 0 || wins > 5) return false;
-  if (!isInteger(seed) || seed < 0) return false;
-  if (!isInteger(nextUid) || nextUid < 1) return false;
-
-  if (!Array.isArray(shop) || shop.length !== 4) return false;
-  if (!shop.every((itemId) => itemId === null || itemExists(itemId))) {
-    return false;
+  // The shop must always contain exactly four offers.
+  if (!Array.isArray(value.shop) || value.shop.length !== 4) return false;
+  for (const itemId of value.shop) {
+    if (itemId !== null && !itemExists(itemId)) return false;
   }
 
-  if (!Array.isArray(backpack) || backpack.length !== 6) return false;
+  // The backpack must always contain exactly six slots.
+  if (!Array.isArray(value.backpack) || value.backpack.length !== 6) return false;
 
-  const usedIds = new Set<string>();
+  const usedUids = new Set<string>();
 
-  for (const slot of backpack) {
+  for (const slot of value.backpack) {
     if (slot === null) continue;
     if (!isObject(slot)) return false;
-    if (typeof slot.uid !== "string" || typeof slot.itemId !== "string") {
-      return false;
-    }
+
+    if (typeof slot.uid !== "string" || slot.uid.length === 0) return false;
+    if (typeof slot.itemId !== "string") return false;
     if (!itemExists(slot.itemId)) return false;
-    if (usedIds.has(slot.uid)) return false;
-    usedIds.add(slot.uid);
+    if (usedUids.has(slot.uid)) return false;
+
+    usedUids.add(slot.uid);
+  }
+
+  return true;
+}
+
+function validateBattle(battle: unknown, round: number): boolean {
+  if (!isObject(battle)) return false;
+  if (!isWholeNumber(battle.frame) || battle.frame < 0) return false;
+
+  // The saved opponent must belong to the saved round.
+  if (!isObject(battle.opponent)) return false;
+  if (!isWholeNumber(battle.opponent.round)) return false;
+  if (battle.opponent.round !== round) return false;
+  if (typeof battle.opponent.id !== "string") return false;
+  if (!isObject(battle.player) || !isObject(battle.enemy)) return false;
+
+  // Replay frames must exist and the saved frame must point to one of them.
+  if (!isObject(battle.result)) return false;
+  if (!Array.isArray(battle.result.frames)) return false;
+  if (battle.result.frames.length === 0) return false;
+  if (battle.frame >= battle.result.frames.length) return false;
+
+  if (battle.result.winner !== "player" && battle.result.winner !== "opponent") {
+    return false;
+  }
+  if (battle.result.reason !== "knockout" && battle.result.reason !== "timeout") {
+    return false;
   }
 
   return true;
@@ -72,50 +96,45 @@ function validateRun(value: unknown): value is RunState {
 function validateGame(value: unknown): value is GameState {
   if (!isObject(value)) return false;
 
-  if (value.phase !== "shop"
-    && value.phase !== "searching"
-    && value.phase !== "battle"
-    && value.phase !== "finished") {
+  const phase = value.phase;
+  if (
+    phase !== "shop"
+    && phase !== "searching"
+    && phase !== "battle"
+    && phase !== "finished"
+  ) {
     return false;
   }
 
   if (!validateRun(value.run)) return false;
-  if (typeof value.error !== "string" && value.error !== null) {
-    return false;
+  if (typeof value.error !== "string" && value.error !== null) return false;
+
+  if (phase === "battle") {
+    if (!validateBattle(value.battle, value.run.round)) return false;
   }
 
-  if (value.phase === "finished") {
-    if (value.battle !== null) return false;
+  if (phase !== "battle" && value.battle !== null) return false;
+
+  if (phase === "finished") {
     if (runOutcome(value.run) === null) return false;
-  } else if (value.phase === "battle") {
-    const battle = value.battle;
-    if (!isObject(battle)) return false;
-    if (!isInteger(battle.frame) || battle.frame < 0) return false;
-
-    const opponent = battle.opponent;
-    if (!isObject(opponent)) return false;
-    if (!isInteger(opponent.round) || opponent.round !== value.run.round) {
-      return false;
-    }
-
-    const result = battle.result;
-    if (!isObject(result)) return false;
-    if (!Array.isArray(result.frames) || result.frames.length === 0) {
-      return false;
-    }
-    if (battle.frame >= result.frames.length) return false;
-  } else if (value.battle !== null) {
-    return false;
   }
 
   return true;
 }
 
-export function loadSavedGame(): GameState | null {
-  return loadSavedGameResult().game;
+export function clearSavedGame(): void {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {
+    // The game can still be played if browser storage is unavailable.
+  }
 }
 
-/** Loads the save and also reports when a save had to be discarded. */
+function discardSave(message: string): SavedGameLoadResult {
+  clearSavedGame();
+  return { game: null, message };
+}
+
 export function loadSavedGameResult(): SavedGameLoadResult {
   try {
     const stored = localStorage.getItem(SAVE_KEY);
@@ -123,55 +142,45 @@ export function loadSavedGameResult(): SavedGameLoadResult {
 
     const parsed: unknown = JSON.parse(stored);
     if (!isObject(parsed)) {
-      clearSavedGame();
-      return { game: null, message: "The saved run was invalid and has been discarded." };
+      return discardSave("The saved run was invalid and has been discarded.");
     }
     if (parsed.version !== SAVE_VERSION) {
-      clearSavedGame();
-      return { game: null, message: "The saved run is from an incompatible version and has been discarded." };
+      return discardSave("The saved run is from an incompatible version and has been discarded.");
     }
     if (!validateGame(parsed.game)) {
-      clearSavedGame();
-      return { game: null, message: "The saved run was invalid and has been discarded." };
+      return discardSave("The saved run was invalid and has been discarded.");
     }
 
     const game = parsed.game;
 
-    // Searches are not resumed. The player returns to the last safe shop state.
+    // A running search is never restored; it is safer to return to the shop.
     if (game.phase === "searching") {
+      const safeGame: GameState = {
+        ...game,
+        phase: "shop",
+        battle: null,
+        error: null,
+      };
+
       return {
-        game: {
-          ...game,
-          phase: "shop",
-          battle: null,
-          error: null,
-        },
+        game: safeGame,
         message: "A running search was safely cancelled. The saved shop has been restored.",
       };
     }
 
-    if (game.phase === "battle" && isObject(game.battle)) {
-      const result = game.battle.result;
-      if (!isObject(result) || !Array.isArray(result.frames)) {
-        clearSavedGame();
-        return { game: null, message: "The saved battle was invalid and has been discarded." };
-      }
-
-      if (game.battle.frame >= result.frames.length) {
-        clearSavedGame();
-        return { game: null, message: "The saved battle was invalid and has been discarded." };
-      }
-    }
-
     return { game, message: null };
   } catch {
-    return { game: null, message: "The saved run could not be read and has been discarded." };
+    return discardSave("The saved run could not be read and has been discarded.");
   }
+}
+
+export function loadSavedGame(): GameState | null {
+  return loadSavedGameResult().game;
 }
 
 export function saveGame(game: GameState): void {
   try {
-    // Never save a live search as resumable.
+    // Do not save the temporary "searching" phase.
     const safeGame: GameState =
       game.phase === "searching"
         ? { ...game, phase: "shop", battle: null, error: null }
@@ -185,14 +194,6 @@ export function saveGame(game: GameState): void {
 
     localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
   } catch {
-    // Storage can be unavailable or full; the game remains playable.
-  }
-}
-
-export function clearSavedGame(): void {
-  try {
-    localStorage.removeItem(SAVE_KEY);
-  } catch {
-    // Storage can be unavailable; the game is still usable.
+    // The game remains playable if localStorage is unavailable or full.
   }
 }

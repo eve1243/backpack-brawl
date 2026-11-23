@@ -13,10 +13,24 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [saveMessage, setSaveMessage] = useState<string | null>(initialLoad.message);
 
   useEffect(() => {
-    if(game) saveGame(game);
+    if (game) saveGame(game);
   }, [game]);
 
- const value: GameContextValue = {
+  useEffect(() => {
+    function saveBeforeLeaving() {
+      if (game) saveGame(game);
+    }
+
+    window.addEventListener("beforeunload", saveBeforeLeaving);
+    window.addEventListener("pagehide", saveBeforeLeaving);
+
+    return () => {
+      window.removeEventListener("beforeunload", saveBeforeLeaving);
+      window.removeEventListener("pagehide", saveBeforeLeaving);
+    };
+  }, [game]);
+
+  const value: GameContextValue = {
     game,
     saveMessage,
     clearSaveMessage: () => setSaveMessage(null),

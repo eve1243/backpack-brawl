@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { newGame, startBattle } from "../src/game";
+import { newGame, routeForGame, startBattle } from "../src/game";
 import {
   loadSavedGame,
   loadSavedGameResult,
@@ -158,6 +158,86 @@ describe("B6 save and resume", () => {
     unfinished.phase = "finished";
     unfinished.run.wins = 2;
     saveGame(unfinished);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
+  it("restores a finished defeat", () => {
+    const defeat = newGame(123);
+    defeat.phase = "finished";
+    defeat.run.lives = 0;
+    saveGame(defeat);
+
+    expect(loadSavedGame()?.phase).toBe("finished");
+  });
+
+  it("maps finished runs to the result screen", () => {
+    const game = newGame(123);
+    game.phase = "finished";
+    game.run.wins = 5;
+
+    expect(routeForGame(game)).toBe("/result");
+  });
+
+  it("rejects unknown item ids", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "unknown-item" };
+    saveGame(game);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
+  it("rejects duplicate backpack uids", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    game.run.backpack[2] = { uid: "item-1", itemId: "pot-lid" };
+    saveGame(game);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
+  it("rejects a wrong backpack array size", () => {
+    const game = newGame(123);
+    const invalidGame = {
+      ...game,
+      run: {
+        ...game.run,
+        backpack: [null],
+      },
+    };
+    storedValue = JSON.stringify({
+      version: 1,
+      game: invalidGame,
+      savedAt: Date.now(),
+    });
+
+    expect(loadSavedGame()).toBeNull();
+  });
+
+  it("rejects a battle without replay frames", () => {
+    const game = newGame(123);
+    const invalidBattleGame = {
+      ...game,
+      phase: "battle",
+      run: {
+        ...game.run,
+        backpack: game.run.backpack,
+      },
+      battle: {
+        frame: 0,
+        opponent: {},
+        player: {},
+        enemy: {},
+        result: {
+          frames: [],
+        },
+      },
+    };
+    storedValue = JSON.stringify({
+      version: 1,
+      game: invalidBattleGame,
+      savedAt: Date.now(),
+    });
 
     expect(loadSavedGame()).toBeNull();
   });
