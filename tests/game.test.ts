@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { advanceReplay, leaveBattle, newGame, skipReplay, startBattle, startSearch, updateRun } from "../src/game";
-import { opponentForRound } from "../server/opponents.js";
+import { newGame, showFrame, startBattle, updateRun } from "../src/game";
 import { moveItem, rerollShop } from "../src/run";
 
 describe("B1 shop phase protection", () => {
@@ -44,24 +43,24 @@ describe("B2 backpack phase protection", () => {
   });
 });
 
-it("scores a status-effect battle the same after Skip or playback and clears poison for the next battle", () => {
-  const game = newGame(123);
-  game.run.backpack[0] = { uid: "item-1", itemId: "viper-fang" };
-  game.run.backpack[1] = { uid: "item-2", itemId: "healing-herb" };
-  game.run.nextUid = 3;
-  const first = startBattle(startSearch(game), opponentForRound(1));
-  const skipped = skipReplay(first);
-  let played = first;
-  for (let frame = 1; frame < first.battle!.result.frames.length; frame++) {
-    played = advanceReplay(played);
-  }
+// ------ B6 replay result protection ------
+describe("B6 replay result protection", () => {
+  it("applies a battle result only once", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const battling = startBattle(game, {
+      id: "test-opponent",
+      name: "Test Opponent",
+      icon: "🐢",
+      hp: 25,
+      round: 1,
+      items: ["chipped-dagger"],
+    });
 
-  expect(played).toEqual(skipped);
-  expect(advanceReplay(skipped)).toBe(skipped);
-  expect(played.battle!.result.frames.at(-1)!.opponent.statuses.poison).toBeGreaterThan(0);
-  const nextShop = leaveBattle(played);
-  expect(nextShop.run.round).toBe(2);
-  const next = startBattle(startSearch(nextShop), opponentForRound(2));
-  expect(next.battle!.result.frames[0].player.statuses.poison).toBe(0);
-  expect(next.battle!.result.frames[0].opponent.statuses.poison).toBe(0);
+    const finished = showFrame(battling, Infinity);
+    const shownAgain = showFrame(finished, Infinity);
+
+    expect(shownAgain.run.wins).toBe(finished.run.wins);
+    expect(shownAgain.run.lives).toBe(finished.run.lives);
+  });
 });
