@@ -6,11 +6,12 @@ interface ItemSet {
   name: string;
   icon: string;
   requiredItems: number;
+  startingBlock?: number;
 }
 
 export const ITEM_SETS: ItemSet[] = [
   { id: "fire", name: "Fire", icon: "🔥", requiredItems: 2 },
-  { id: "guard", name: "Guard", icon: "🛡️", requiredItems: 2 },
+  { id: "guard", name: "Guard", icon: "🛡️", requiredItems: 2, startingBlock: 4 },
 ];
 
 /** Each equipped copy counts, and each matching set is returned once. */

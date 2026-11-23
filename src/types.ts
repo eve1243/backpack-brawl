@@ -108,6 +108,8 @@ export interface FighterItem {
 export interface Fighter {
   name: string;
   maxHp: number;
+  /** Block available before the first battle tick. Defaults to zero. */
+  startingBlock?: number;
   items: FighterItem[];
 }
 

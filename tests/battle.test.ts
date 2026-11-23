@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { opponentForRound } from "../server/opponents.js";
-import { buildFighter, buildOpponentFighter, simulateBattle } from "../src/battle";
+import { buildFighter, buildOpponentFighter, buildPlayerFighter, simulateBattle } from "../src/battle";
 import type { Fighter, FighterItem, ItemEffects } from "../src/types";
 
 function item(name: string, cooldown: number, effects: ItemEffects): FighterItem {
@@ -10,6 +10,37 @@ function item(name: string, cooldown: number, effects: ItemEffects): FighterItem
 function fighter(name: string, items: FighterItem[], maxHp = 40): Fighter {
   return { name, items, maxHp };
 }
+
+describe("B4 Guard set", () => {
+  it("starts the hero and opponent with four block for two or more Guard items", () => {
+    const hero = buildPlayerFighter([
+      { uid: "1", itemId: "oak-buckler" }, null, { uid: "2", itemId: "pot-lid" },
+    ]);
+    const enemy = buildOpponentFighter({
+      ...opponentForRound(1), items: ["pot-lid", "pot-lid", "spiked-shield"],
+    });
+    const { frames } = simulateBattle(hero, enemy);
+
+    expect(frames[0]).toMatchObject({ tick: 0, player: { block: 4 }, opponent: { block: 4 } });
+  });
+
+  it("spends the starting block on incoming damage and grants it only once", () => {
+    const hero = buildFighter(["oak-buckler", "oak-buckler"], 40);
+    const enemy = fighter("Enemy", [item("Blade", 1, { damage: 3 })]);
+    const { frames } = simulateBattle(hero, enemy);
+
+    expect(frames[1].player).toMatchObject({ hp: 40, block: 1 });
+    expect(frames[2].player).toMatchObject({ hp: 38, block: 0 });
+  });
+
+  it("starts with zero block for a single Guard item or an active Fire set", () => {
+    const hero = buildFighter(["pot-lid"], 40);
+    const enemy = buildFighter(["ember-torch", "cinder-blade"], 40);
+    const { frames } = simulateBattle(hero, enemy);
+
+    expect(frames[0]).toMatchObject({ player: { block: 0 }, opponent: { block: 0 } });
+  });
+});
 
 it("lets the round-two opponent poison the hero and recover lost HP with shop items", () => {
   const hero = buildFighter(["chipped-dagger"], 40, "Hero");

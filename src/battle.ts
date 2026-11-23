@@ -1,4 +1,5 @@
 import { getItem } from "./items";
+import { getActiveSets } from "./sets";
 import { itemIdsOf } from "./shop";
 import type { Backpack, BattleEvent, BattleResult, Fighter, FighterItem, FighterSnapshot, Opponent, Side } from "./types";
 
@@ -15,7 +16,8 @@ export function buildFighter(itemIds: string[], baseHp: number, name = "Fighter"
     const def = getItem(id);
     return { itemId: def.id, name: def.name, icon: def.icon, cooldown: def.cooldown, effects: { ...def.effects } };
   });
-  return { name, maxHp: baseHp, items };
+  const startingBlock = getActiveSets(itemIds).reduce((total, set) => total + (set.startingBlock ?? 0), 0);
+  return { name, maxHp: baseHp, startingBlock, items };
 }
 
 /** The player's fighter: every backpack item and the hero's base HP. */
@@ -111,7 +113,7 @@ export function simulateBattle(player: Fighter, opponent: Fighter): BattleResult
 }
 
 function initState(fighter: Fighter): FighterState {
-  return { fighter, hp: fighter.maxHp, block: 0, poison: 0, charge: fighter.items.map(() => 0) };
+  return { fighter, hp: fighter.maxHp, block: fighter.startingBlock ?? 0, poison: 0, charge: fighter.items.map(() => 0) };
 }
 
 /** Advances one tick of cooldowns and returns the items that fire this tick. */
