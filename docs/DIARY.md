@@ -99,7 +99,7 @@ Die Requirements sind möglichst gleichmäßig aufgeteilt:
 - Möglichkeit 1: Set-Namen direkt bei jedem Item speichern
 - Möglichkeit 2: eine extra Set-Tabelle mit Set-Namen, Item-IDs und Bonus machen
 - Möglichkeit 3: Sets nur über einzelne if-Abfragen erkennen
-- Unsere Lösung: jedes Item bekommt eine Set-ID oder mehrere Set-IDs
+- Ein Item kann über die optionale `setId` zu einem Set gehören
 - die Set-Definition enthält Name, Icon, benötigte Anzahl und Bonus
 - ein Set ist aktiv wenn mindestens zwei Items vom Set vorhanden sind
 - die aktiven Sets werden für Spieler und Gegner gleich berechnet
@@ -147,6 +147,29 @@ Hab gemerkt, wenn ich all mein Gold beim Reroll verbrenne, hab ich keins mehr um
 
 - **Grave Tinker (Runde 2):** Mit Bitter Root gibt er dem Spieler alle 4 Sekunden einen Giftstapel. Mit Healing Herb heilt er sich alle 2 Sekunden um bis zu 2 HP, höchstens auf seine 36 HP.
 - **Pit Gladiator (Runde 5):** Mit Venom Vial gibt er dem Spieler alle 4 Sekunden zwei Giftstapel. Mit Field Tonic heilt er sich alle 3 Sekunden um bis zu 5 HP, höchstens auf seine 50 HP.
+
+## B4: Item-Sets
+
+**Wann ist ein Set aktiv?** Zwei Items aus demselben Set im Rucksack reichen aus. Auch zwei gleiche Items zählen, denn jedes braucht einen eigenen Platz. Ein drittes Item macht den Bonus nicht stärker. Die Regel gilt für Spieler und Gegner.
+
+| Set | Items | Bonus ab zwei Items |
+| --- | --- | --- |
+| Fire 🔥 | Ember Torch, Cinder Blade, Forge Hammer | Jedes Mal, wenn ein Fire-Item auslöst, bekommt der Gegner 3 Burn-Stapel. |
+| Guard 🛡️ | Oak Buckler, Pot Lid, Spiked Shield | Der Kämpfer beginnt jeden Kampf mit 4 Block. |
+
+Für Guard habe ich drei Schilde gewählt, die es im Spiel schon gab. Mit dem Bonus schützen sie den Kämpfer schon vor dem ersten Treffer.
+
+**Wie funktioniert Burn?** Alle zwei Ticks, also einmal pro Sekunde, verursacht jeder Burn-Stapel 2 Schaden. Block fängt den Schaden zuerst ab. Dann verschwindet ein Stapel. Das passiert auch, wenn der Block den ganzen Schaden abfängt.
+
+Ein Kämpfer hat zum Beispiel 3 Burn-Stapel und 4 Block. Die 3 Stapel verursachen zusammen 6 Schaden. Der Block fängt 4 davon ab. Der Kämpfer verliert also 2 HP und hat danach noch 2 Burn-Stapel.
+
+Poison zieht pro Stapel direkt 1 HP ab und wirkt bis zum Kampfende. Wenn mehrere Effekte im selben Tick wirken, kommen zuerst die Items, dann Poison und zuletzt Burn. Danach prüft das Spiel, wer noch HP hat.
+
+**Gegner mit aktiven Sets**
+
+- **Rusted Knight (Runde 4):** trägt Oak Buckler und Pot Lid. Durch das Guard-Set startet er mit 4 Block.
+- **Ash Golem (Runde 6) neu:** nutzt Fire und Guard gleichzeitig. Der Spieler bekommt 3 Burn-Stapel von der Ember Torch alle 2 Sekunden und weitere 3 vom Forge Hammer alle 4 Sekunden. Mit Spiked Shield und Oak Buckler startet der Golem außerdem mit 4 Block.
+- **Hollow King (Runde 7):** trägt mit Spiked Shield, Oak Buckler und Pot Lid alle drei Guard-Items. Auch mit drei Items bekommt er den Set-Bonus nur einmal und beginnt mit 4 Block.
 
 ## B6 store
 

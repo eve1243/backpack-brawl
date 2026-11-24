@@ -1,6 +1,8 @@
 import { getItem } from "../items";
 import { itemTooltip } from "../rules";
-import { BACKPACK_COLS } from "../shop";
+import { BACKPACK_COLS, itemIdsOf } from "../shop";
+import { getActiveSets } from "../sets";
+import { ActiveSetBonuses, SetBadge } from "./ItemSets";
 import type { Backpack as BackpackSlots, RunState } from "../types";
 import {sellBlocker} from "../run";
 import { useState } from "react";
@@ -37,6 +39,9 @@ export function Backpack({
     <section className="rounded-lg border border-panel-edge bg-panel p-4">
       <h2 className="font-display text-xl font-bold">🎒 Backpack</h2>
       <p className="mb-3 text-sm text-muted">Hover an item to see its stats.</p>
+      <div aria-live="polite">
+        <ActiveSetBonuses sets={getActiveSets(itemIdsOf(backpack))} />
+      </div>
       {selectedIndex !== null && (
         <button
           type="button"
@@ -46,7 +51,7 @@ export function Backpack({
           Cancel selection
         </button>
       )}
-      <ul className="grid gap-2" style={{ gridTemplateColumns: `repeat(${BACKPACK_COLS}, minmax(0, 1fr))` }}>
+      <ul className="mt-2 grid gap-2" style={{ gridTemplateColumns: `repeat(${BACKPACK_COLS}, minmax(0, 1fr))` }}>
         {backpack.map((slot, index) => {
           const item = slot ? getItem(slot.itemId) : null;
 
@@ -75,6 +80,7 @@ export function Backpack({
       {item.icon}
     </span>
     <span className="text-center text-xs leading-tight">{item.name}</span>
+    <SetBadge setId={item.setId} />
 
     <button
       type="button"

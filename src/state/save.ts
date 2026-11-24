@@ -3,7 +3,7 @@ import { runOutcome } from "../run";
 import type { GameState, RunState } from "../types";
 
 export const SAVE_KEY = "backpack-brawl-save";
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2;
 
 export interface SavedGameLoadResult {
   game: GameState | null;
@@ -66,7 +66,7 @@ function validateRun(value: unknown): value is RunState {
   return true;
 }
 
-function validateBattle(battle: unknown, round: number): boolean {
+function validateBattle(battle: unknown, round: number, version: number): boolean {
   if (!isObject(battle)) return false;
   if (!isWholeNumber(battle.frame) || battle.frame < 0) return false;
 
@@ -90,17 +90,16 @@ function validateBattle(battle: unknown, round: number): boolean {
     return false;
   }
 
-  // Check poison stacks in every saved battle frame.
   for (const frame of battle.result.frames) {
     if (!isObject(frame)) return false;
-    if (!validatePoisonSnapshot(frame.player)) return false;
-    if (!validatePoisonSnapshot(frame.opponent)) return false;
+    if (!validateSnapshot(frame.player, version)) return false;
+    if (!validateSnapshot(frame.opponent, version)) return false;
   }
 
   return true;
 }
 
-function validatePoisonSnapshot(snapshot: unknown): boolean {
+function validateSnapshot(snapshot: unknown, version: number): boolean {
   if (!isObject(snapshot)) return false;
   if (!isWholeNumber(snapshot.hp) || snapshot.hp < 0) return false;
   if (!isWholeNumber(snapshot.maxHp) || snapshot.maxHp <= 0) return false;
@@ -108,11 +107,12 @@ function validatePoisonSnapshot(snapshot: unknown): boolean {
   if (!isObject(snapshot.statuses)) return false;
   if (!isWholeNumber(snapshot.statuses.poison)) return false;
   if (snapshot.statuses.poison < 0) return false;
-
-  return true;
+  // Version 1 recorded battles before Burn existed. Keep their original replay.
+  if (version === 1 && snapshot.statuses.burn === undefined) snapshot.statuses.burn = 0;
+  return isWholeNumber(snapshot.statuses.burn) && snapshot.statuses.burn >= 0;
 }
 
-function validateGame(value: unknown): value is GameState {
+function validateGame(value: unknown, version: number): value is GameState {
   if (!isObject(value)) return false;
 
   const phase = value.phase;
@@ -129,7 +129,7 @@ function validateGame(value: unknown): value is GameState {
   if (typeof value.error !== "string" && value.error !== null) return false;
 
   if (phase === "battle") {
-    if (!validateBattle(value.battle, value.run.round)) return false;
+    if (!validateBattle(value.battle, value.run.round, version)) return false;
   }
 
   if (phase !== "battle" && value.battle !== null) return false;
@@ -163,10 +163,10 @@ export function loadSavedGameResult(): SavedGameLoadResult {
     if (!isObject(parsed)) {
       return discardSave("The saved run was invalid and has been discarded.");
     }
-    if (parsed.version !== SAVE_VERSION) {
+    if (parsed.version !== 1 && parsed.version !== SAVE_VERSION) {
       return discardSave("The saved run is from an incompatible version and has been discarded.");
     }
-    if (!validateGame(parsed.game)) {
+    if (!validateGame(parsed.game, parsed.version)) {
       return discardSave("The saved run was invalid and has been discarded.");
     }
 
