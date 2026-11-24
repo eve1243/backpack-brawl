@@ -134,6 +134,9 @@ function validateGame(value: unknown, version: number): value is GameState {
 
   if (phase !== "battle" && value.battle !== null) return false;
 
+  if (phase === "shop" && value.search !== null) return false;
+  if (phase === "finished" && value.search !== null) return false;
+
   if (phase === "finished") {
     if (runOutcome(value.run) === null) return false;
   }
@@ -179,6 +182,7 @@ export function loadSavedGameResult(): SavedGameLoadResult {
         phase: "shop",
         battle: null,
         error: null,
+        search: null,
       };
 
       return {
@@ -202,7 +206,7 @@ export function saveGame(game: GameState): void {
     // Do not save the temporary "searching" phase.
     const safeGame: GameState =
       game.phase === "searching"
-        ? { ...game, phase: "shop", battle: null, error: null }
+        ? { ...game, phase: "shop", battle: null, error: null, search: null }
         : game;
 
     const saved: SavedGame = {

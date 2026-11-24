@@ -4,7 +4,7 @@ import { FightBar } from "../components/FightBar";
 import { RulesPanel } from "../components/RulesPanel";
 import { RunHeader } from "../components/RunHeader";
 import { Shop } from "../components/Shop";
-import { fightBlocker, searchFailed, startBattle, startSearch, updateRun} from "../game";
+import { finishSearch, fightBlocker, searchFailed, startSearch, updateRun } from "../game";
 import { buyItem, needsRunReset, rerollShop, sellItem, moveItem } from "../run";
 import { useActiveGame } from "../state/GameContext";
 
@@ -39,13 +39,20 @@ export function ShopPage() {
   // Once the opponent is found the phase becomes "battle" and RequireRoute redirects to the battle page.
   async function handleFindOpponent() {
     if (fightBlocker(game) !== null) return;
-    update(startSearch);
+    if (game.phase !== "shop") return;
+
+    const searching = startSearch(game);
+    const searchId = searching.search?.id;
+    if (!searchId) return;
+
+    update(() => searching);
+
     try {
       const opponent = await fetchOpponent(run.round);
-      update((current) => startBattle(current, opponent));
+      update((current) => finishSearch(current, searchId, opponent));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Opponent search failed.";
-      update((current) => searchFailed(current, message));
+      update((current) => searchFailed(current, searchId, message));
     }
   }
 
@@ -66,7 +73,13 @@ export function ShopPage() {
           </button>
         </section>
       )}
-      <FightBar phase={phase} blocker={fightBlocker(game)} error={game.error} onFight={handleFindOpponent} />
+      <FightBar
+        phase={phase}
+        searchActive={game.search !== null}
+        blocker={fightBlocker(game)}
+        error={game.error}
+        onFight={handleFindOpponent}
+      />
 
       {/* While searching, the whole shop/backpack area is disabled so the fighting build can't change. */}
       <fieldset disabled={phase !== "shop"} className="grid min-w-0 gap-4 disabled:opacity-60 lg:grid-cols-[1fr_16rem_18rem]">

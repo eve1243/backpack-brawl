@@ -9,7 +9,14 @@ import type { BattleReplay, GameState, Opponent, RunState } from "./types";
  */
 
 export function newGame(seed: number): GameState {
-  return { phase: "shop", run: newRun(seed), battle: null, error: null };
+  return {
+    phase: "shop",
+    run: newRun(seed),
+    battle: null,
+    error: null,
+    search: null,
+    nextSearchId: 1,
+  };
 }
 
 /** Applies a shop/backpack action; only allowed while shopping. */
@@ -26,12 +33,45 @@ export function fightBlocker(game: GameState): string | null {
 }
 
 export function startSearch(game: GameState): GameState {
+  if (game.phase !== "shop") return game;
   if (fightBlocker(game) !== null) return game;
-  return { ...game, phase: "searching", error: null };
+  if (game.search !== null) return game;
+
+  const search = {
+    id: game.nextSearchId,
+    round: game.run.round,
+  };
+
+  return {
+    ...game,
+    phase: "searching",
+    error: null,
+    search,
+    nextSearchId: game.nextSearchId + 1,
+  };
 }
 
-export function searchFailed(game: GameState, error: string): GameState {
-  return { ...game, error };
+export function searchFailed(game: GameState, searchId: number, error: string): GameState {
+  if (game.phase !== "searching") return game;
+  if (game.search?.id !== searchId) return game;
+
+  return {
+    ...game,
+    phase: "shop",
+    search: null,
+    battle: null,
+    error,
+  };
+}
+
+export function finishSearch(game: GameState, searchId: number, opponent: Opponent): GameState {
+  if (game.phase !== "searching") return game;
+  if (game.search?.id !== searchId) return game;
+  if (game.search.round !== game.run.round) return game;
+  if (opponent.round !== game.run.round) return game;
+
+  const gameWithoutSearch = { ...game, search: null };
+  return startBattle(gameWithoutSearch, opponent);
 }
 
 /** Simulates the battle against `opponent` and starts its replay at the first frame. */

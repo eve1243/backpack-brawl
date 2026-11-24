@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { newGame, showFrame, startBattle, updateRun } from "../src/game";
+import {
+  finishSearch,
+  newGame,
+  searchFailed,
+  showFrame,
+  startBattle,
+  startSearch,
+  updateRun,
+} from "../src/game";
 import { moveItem, rerollShop } from "../src/run";
 
 describe("B1 shop phase protection", () => {
@@ -62,5 +70,107 @@ describe("B6 replay result protection", () => {
 
     expect(shownAgain.run.wins).toBe(finished.run.wins);
     expect(shownAgain.run.lives).toBe(finished.run.lives);
+  });
+});
+
+// ------ B5 Resilient matchmaking tests ------
+describe("B5 resilient matchmaking", () => {
+  const opponent = {
+    id: "test-opponent",
+    name: "Test Opponent",
+    icon: "🐢",
+    hp: 25,
+    round: 1,
+    items: ["chipped-dagger"],
+  };
+
+  it("starts only one search", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+
+    const searching = startSearch(game);
+    const secondSearch = startSearch(searching);
+
+    expect(searching.phase).toBe("searching");
+    expect(searching.search?.id).toBe(1);
+    expect(secondSearch).toBe(searching);
+  });
+
+  it("returns to the shop after a matching search error", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+
+    const failed = searchFailed(searching, 1, "Arena unavailable");
+
+    expect(failed.phase).toBe("shop");
+    expect(failed.search).toBeNull();
+    expect(failed.error).toBe("Arena unavailable");
+  });
+
+  it("ignores an error from an old search", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+
+    const failed = searchFailed(searching, 999, "Late error");
+
+    expect(failed).toBe(searching);
+  });
+
+  it("starts a battle only for the matching search", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+
+    const battling = finishSearch(searching, 1, opponent);
+    const oldResult = finishSearch(battling, 1, opponent);
+
+    expect(battling.phase).toBe("battle");
+    expect(battling.search).toBeNull();
+    expect(oldResult).toBe(battling);
+  });
+
+  it("ignores an opponent from a different round", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+    const wrongRoundOpponent = { ...opponent, round: 2 };
+
+    const result = finishSearch(searching, 1, wrongRoundOpponent);
+
+    expect(result).toBe(searching);
+  });
+
+  it("ignores a late result after the search was cancelled", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+    const failed = searchFailed(searching, 1, "Search cancelled");
+
+    const lateResult = finishSearch(failed, 1, opponent);
+
+    expect(lateResult).toBe(failed);
+  });
+
+  it("ignores a duplicate API response", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+    const battling = finishSearch(searching, 1, opponent);
+
+    const duplicateResult = finishSearch(battling, 1, opponent);
+
+    expect(duplicateResult).toBe(battling);
+  });
+
+  it("ignores a result that belongs to an old search ID", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+
+    const oldResult = finishSearch(searching, 999, opponent);
+
+    expect(oldResult).toBe(searching);
   });
 });
