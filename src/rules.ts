@@ -2,6 +2,7 @@ import { BURN_DAMAGE_PER_STACK, BURN_DECAY_PER_TICK, BURN_INTERVAL_TICKS, HERO_B
 import { GOLD_PER_ROUND, START_GOLD, START_LIVES, WINS_TO_VICTORY } from "./run";
 import { BACKPACK_COLS, BACKPACK_ROWS, SHOP_SIZE } from "./shop";
 import { describeEffects } from "./items";
+import { ITEM_SETS, type ItemSet } from "./sets";
 import type { ItemDef, ItemEffects } from "./types";
 
 /**
@@ -10,6 +11,15 @@ import type { ItemDef, ItemEffects } from "./types";
  */
 
 const BATTLE_SECONDS = MAX_TICKS * TICK_SECONDS;
+
+export function setBonusText(set: ItemSet): string {
+  if (set.id === "fire") return `+${set.burnOnActivation} Burn on the enemy each time a Fire item activates`;
+  return `+${set.startingBlock} Block at battle start`;
+}
+
+export function setRule(set: ItemSet): string {
+  return `${set.requiredItems}+ ${set.name} items: ${setBonusText(set)}.`;
+}
 
 /** Tooltip per item effect. */
 export const EFFECT_HELP: Record<keyof ItemEffects, string> = {
@@ -63,6 +73,15 @@ export const RULES: RuleSection[] = [
       `Battles run on their own. Your hero has ${HERO_BASE_HP} HP; every item fires whenever its cooldown is up.`,
       `Direct item damage hits block first. Only the rest is lost from HP. Unused block stays for the rest of the battle.`,
       `Knock the enemy out to win. ${STATUS_HELP.timer} If both fall at once, you lose.`,
+    ],
+  },
+  {
+    title: "🎒 Item sets & Burn",
+    rules: [
+      "Each equipped copy counts, including duplicates. Each set grants its bonus once per fighter.",
+      ...ITEM_SETS.map(setRule),
+      EFFECT_HELP.burn,
+      "Items activate first, then Poison and Burn resolve in that order. New stacks count immediately on a damage tick. Both fighters take status damage before knockouts are decided.",
     ],
   },
   {

@@ -1,6 +1,8 @@
 import { TICK_SECONDS, MAX_TICKS } from "../battle";
 import { getItem } from "../items";
 import { EFFECT_HELP, itemTooltip, STATUS_HELP } from "../rules";
+import { ITEM_SETS } from "../sets";
+import { ActiveSetBonuses, SetBadge } from "./ItemSets";
 import type { BattleEvent, BattleEventKind, BattleReplay, Fighter, FighterSnapshot, Side } from "../types";
 
 interface BattleViewProps {
@@ -96,6 +98,8 @@ const EVENT_COLOUR: Partial<Record<BattleEventKind, string>> = {
   damage: "text-life",
   poison: "text-violet-300",
   poisonDamage: "text-violet-200",
+  burn: "text-orange-300",
+  burnDamage: "text-orange-200",
   heal: "text-emerald-300",
 };
 
@@ -130,6 +134,11 @@ interface FighterPanelProps {
 function FighterPanel({ side, icon, fighter, snapshot, lastHeal }: FighterPanelProps) {
   const { hp, maxHp, block } = snapshot;
   const knockedOut = hp <= 0;
+  // Use the bonuses recorded for this fight, including when replaying an older save.
+  const activeSets = ITEM_SETS.filter((set) =>
+    (set.startingBlock && fighter.startingBlock) ||
+    (set.burnOnActivation && fighter.items.some((item) => item.effects.burn)),
+  );
 
   return (
     <article
@@ -148,6 +157,7 @@ function FighterPanel({ side, icon, fighter, snapshot, lastHeal }: FighterPanelP
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <span className="text-violet-300" title={EFFECT_HELP.poison}>☠️ Poison stacks: {snapshot.statuses?.poison ?? 0}</span>
+        <span className="text-orange-300" title={EFFECT_HELP.burn}>🔥 Burn stacks: {snapshot.statuses.burn}</span>
         {lastHeal && (
           <span className="text-emerald-300" title={EFFECT_HELP.heal}>
             💚 Last heal: +{lastHeal.amount} HP at {(lastHeal.tick * TICK_SECONDS).toFixed(1)}s
@@ -155,10 +165,12 @@ function FighterPanel({ side, icon, fighter, snapshot, lastHeal }: FighterPanelP
         )}
       </div>
 
+      <ActiveSetBonuses sets={activeSets} />
       <ul className="flex flex-wrap gap-1" aria-label="Items">
         {fighter.items.map((item, index) => (
-          <li key={index} aria-label={item.name} title={itemTooltip(item)} className="rounded bg-ink/50 px-1.5 py-0.5 text-xl">
-            {item.icon}
+          <li key={index} title={itemTooltip(item)} className="flex items-center gap-1 rounded bg-ink/50 px-1.5 py-0.5 text-xl">
+            <span role="img" aria-label={item.name}>{item.icon}</span>
+            <SetBadge setId={getItem(item.itemId).setId} />
           </li>
         ))}
       </ul>

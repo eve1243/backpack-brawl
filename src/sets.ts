@@ -1,7 +1,7 @@
 import { getItem } from "./items";
 import type { ItemSetId } from "./types";
 
-interface ItemSet {
+export interface ItemSet {
   id: ItemSetId;
   name: string;
   icon: string;
