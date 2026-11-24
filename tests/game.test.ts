@@ -141,4 +141,36 @@ describe("B5 resilient matchmaking", () => {
 
     expect(result).toBe(searching);
   });
+
+  it("ignores a late result after the search was cancelled", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+    const failed = searchFailed(searching, 1, "Search cancelled");
+
+    const lateResult = finishSearch(failed, 1, opponent);
+
+    expect(lateResult).toBe(failed);
+  });
+
+  it("ignores a duplicate API response", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+    const battling = finishSearch(searching, 1, opponent);
+
+    const duplicateResult = finishSearch(battling, 1, opponent);
+
+    expect(duplicateResult).toBe(battling);
+  });
+
+  it("ignores a result that belongs to an old search ID", () => {
+    const game = newGame(123);
+    game.run.backpack[0] = { uid: "item-1", itemId: "hunting-bow" };
+    const searching = startSearch(game);
+
+    const oldResult = finishSearch(searching, 999, opponent);
+
+    expect(oldResult).toBe(searching);
+  });
 });

@@ -56,6 +56,7 @@ describe("B6 save and resume", () => {
     const restored = loadSavedGame();
 
     expect(restored?.phase).toBe("shop");
+    expect(restored?.search).toBeNull();
   });
 
   it("does not restore an invalid JSON save", () => {
