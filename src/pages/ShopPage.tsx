@@ -73,7 +73,13 @@ export function ShopPage() {
           </button>
         </section>
       )}
-      <FightBar phase={phase} blocker={fightBlocker(game)} error={game.error} onFight={handleFindOpponent} />
+      <FightBar
+        phase={phase}
+        searchActive={game.search !== null}
+        blocker={fightBlocker(game)}
+        error={game.error}
+        onFight={handleFindOpponent}
+      />
 
       {/* While searching, the whole shop/backpack area is disabled so the fighting build can't change. */}
       <fieldset disabled={phase !== "shop"} className="grid min-w-0 gap-4 disabled:opacity-60 lg:grid-cols-[1fr_16rem_18rem]">
