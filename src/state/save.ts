@@ -3,7 +3,8 @@ import { runOutcome } from "../run";
 import type { GameState, RunState } from "../types";
 
 export const SAVE_KEY = "backpack-brawl-save";
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
+const RUN_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface SavedGameLoadResult {
   game: GameState | null;
@@ -30,8 +31,12 @@ function itemExists(itemId: unknown): itemId is string {
   return CATALOG.some((item) => item.id === itemId);
 }
 
-function validateRun(value: unknown): value is RunState {
+function validateRun(value: unknown, version: number): value is RunState {
   if (!isObject(value)) return false;
+
+  // Saves from before the Hall of Fame had no run ID.
+  if (version < 3 && value.runId === undefined) value.runId = crypto.randomUUID();
+  if (typeof value.runId !== "string" || !RUN_ID_PATTERN.test(value.runId)) return false;
 
   if (!isWholeNumber(value.round) || value.round < 1) return false;
   if (!isWholeNumber(value.gold) || value.gold < 0) return false;
@@ -125,7 +130,7 @@ function validateGame(value: unknown, version: number): value is GameState {
     return false;
   }
 
-  if (!validateRun(value.run)) return false;
+  if (!validateRun(value.run, version)) return false;
   if (typeof value.error !== "string" && value.error !== null) return false;
 
   if (phase === "battle") {
@@ -166,7 +171,7 @@ export function loadSavedGameResult(): SavedGameLoadResult {
     if (!isObject(parsed)) {
       return discardSave("The saved run was invalid and has been discarded.");
     }
-    if (parsed.version !== 1 && parsed.version !== SAVE_VERSION) {
+    if (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== SAVE_VERSION) {
       return discardSave("The saved run is from an incompatible version and has been discarded.");
     }
     if (!validateGame(parsed.game, parsed.version)) {
@@ -174,6 +179,7 @@ export function loadSavedGameResult(): SavedGameLoadResult {
     }
 
     const game = parsed.game;
+    if (parsed.version < SAVE_VERSION) saveGame(game);
 
     // A running search is never restored; it is safer to return to the shop.
     if (game.phase === "searching") {

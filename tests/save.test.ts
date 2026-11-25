@@ -27,6 +27,37 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("B7 run IDs", () => {
+  it("keeps the ID after reloading and gives a new run its own ID even with the same seed", () => {
+    const game = newGame(123);
+    saveGame(game);
+
+    expect(loadSavedGame()?.run.runId).toBe(game.run.runId);
+    expect(newGame(123).run.runId).not.toBe(game.run.runId);
+  });
+
+  it.each([1, 2])("assigns a lasting ID to a finished version %i run", (version) => {
+    const game = newGame(123);
+    game.phase = "finished";
+    game.run.wins = 5;
+    game.run.round = 5;
+    storedValue = JSON.stringify({ version, game }, (key, value) => key === "runId" ? undefined : value);
+
+    const restored = loadSavedGame();
+    expect(restored).toEqual({ ...game, run: { ...game.run, runId: expect.any(String) } });
+    expect(loadSavedGame()).toEqual(restored);
+  });
+
+  it.each([undefined, "invalid"])("rejects a current save with run ID %s", (runId) => {
+    saveGame(newGame(123));
+    const save = JSON.parse(storedValue!);
+    save.game.run.runId = runId;
+    storedValue = JSON.stringify(save);
+
+    expect(loadSavedGame()).toBeNull();
+  });
+});
+
 describe("B4 Burn in saved replays", () => {
   function fireReplay() {
     const game = newGame(123);

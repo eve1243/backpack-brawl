@@ -37,6 +37,7 @@ export type ShopOffers = (string | null)[];
 export type Phase = "shop" | "searching" | "battle" | "finished";
 
 export interface RunState {
+  readonly runId: string;
   round: number;
   gold: number;
   lives: number;

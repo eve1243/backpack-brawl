@@ -11,6 +11,7 @@ export const REROLL_COST = 1;
 export function newRun(seed: number): RunState {
   const roll = rollShop(seed);
   return {
+    runId: crypto.randomUUID(),
     round: 1,
     gold: START_GOLD,
     lives: START_LIVES,

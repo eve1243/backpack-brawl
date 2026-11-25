@@ -5,7 +5,7 @@ import type { BattleReplay, GameState, Opponent, RunState } from "./types";
 
 /**
  * Phase transitions of one run: shop → searching → battle → shop … → finished.
- * Every function is pure, so they can be passed straight to `setState`.
+ * After creation, phase transitions are pure and can be passed straight to `setState`.
  */
 
 export function newGame(seed: number): GameState {
