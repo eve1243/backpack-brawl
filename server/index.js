@@ -1,11 +1,14 @@
 import cors from "cors";
 import express from "express";
+import { hallOfFame } from "./hallOfFame.js";
 import { opponentForRound, parseRound } from "./opponents.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4200);
 
-app.use(cors()); app.use(express.json());
+app.use(cors());
+app.use("/api/hall-of-fame", hallOfFame);
+app.use(express.json());
 app.get("/api/health", (_req, res) => res.json({ ok: true, service: "backpack-brawl" }));
 
 app.get("/api/opponents", (req, res) => {
