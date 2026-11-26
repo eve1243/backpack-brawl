@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { newGame, routeForGame, startBattle } from "../src/game";
+import { leaveBattle, newGame, routeForGame, skipReplay, startBattle } from "../src/game";
 import {
   loadSavedGame,
   loadSavedGameResult,
@@ -41,7 +41,9 @@ describe("B7 run IDs", () => {
     game.phase = "finished";
     game.run.wins = 5;
     game.run.round = 5;
-    storedValue = JSON.stringify({ version, game }, (key, value) => key === "runId" ? undefined : value);
+    // Older saves also predate the matchmaking fields.
+    const missingFields = ["runId", "search", "nextSearchId"];
+    storedValue = JSON.stringify({ version, game }, (key, value) => missingFields.includes(key) ? undefined : value);
 
     const restored = loadSavedGame();
     expect(restored).toEqual({ ...game, run: { ...game.run, runId: expect.any(String) } });
@@ -192,6 +194,20 @@ describe("B6 save and resume", () => {
     expect(restored?.phase).toBe("battle");
     expect(restored?.battle?.opponent.id).toBe("test-opponent");
     expect(restored?.battle?.frame).toBe(3);
+  });
+
+  it("restores a scored replay after the run advances to the next round", () => {
+    const battle = startBattle(newGame(123), {
+      id: "test-opponent", name: "Test Opponent", icon: "🐢", hp: 25, round: 1, items: ["chipped-dagger"],
+    });
+    const scored = skipReplay(battle);
+    expect(scored.run.round).toBe(2);
+    saveGame(scored);
+
+    const restored = loadSavedGame();
+    expect(restored).toEqual(scored);
+    expect(skipReplay(restored!)).toBe(restored);
+    expect(leaveBattle(restored!).phase).toBe("shop");
   });
 
   it("does not restore a battle frame outside the replay", () => {

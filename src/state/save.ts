@@ -77,14 +77,13 @@ function validateRun(value: unknown, version: number): value is RunState {
   return true;
 }
 
-function validateBattle(battle: unknown, round: number, version: number): boolean {
+function validateBattle(battle: unknown, run: RunState, version: number): boolean {
   if (!isObject(battle)) return false;
   if (!isWholeNumber(battle.frame) || battle.frame < 0) return false;
 
-  // The saved opponent must belong to the saved round.
   if (!isObject(battle.opponent)) return false;
   if (!isWholeNumber(battle.opponent.round)) return false;
-  if (battle.opponent.round !== round) return false;
+  if (battle.opponent.round < 1) return false;
   if (typeof battle.opponent.id !== "string") return false;
   if (!isObject(battle.player) || !isObject(battle.enemy)) return false;
 
@@ -93,6 +92,11 @@ function validateBattle(battle: unknown, round: number, version: number): boolea
   if (!Array.isArray(battle.result.frames)) return false;
   if (battle.result.frames.length === 0) return false;
   if (battle.frame >= battle.result.frames.length) return false;
+
+  // The last frame has already scored the fight. A continuing run is one round ahead.
+  const lastFrame = battle.frame === battle.result.frames.length - 1;
+  const fightRound = lastFrame && !runOutcome(run) ? run.round - 1 : run.round;
+  if (battle.opponent.round !== fightRound) return false;
 
   if (battle.result.winner !== "player" && battle.result.winner !== "opponent") {
     return false;
@@ -126,6 +130,11 @@ function validateSnapshot(snapshot: unknown, version: number): boolean {
 function validateGame(value: unknown, version: number): value is GameState {
   if (!isObject(value)) return false;
 
+  // Saves written before matchmaking tracked requests have neither field.
+  if (version < 3 && value.search === undefined && value.nextSearchId === undefined) {
+    value.search = null;
+    value.nextSearchId = 1;
+  }
   const phase = value.phase;
   if (
     phase !== "shop"
@@ -140,7 +149,7 @@ function validateGame(value: unknown, version: number): value is GameState {
   if (typeof value.error !== "string" && value.error !== null) return false;
 
   if (phase === "battle") {
-    if (!validateBattle(value.battle, value.run.round, version)) return false;
+    if (!validateBattle(value.battle, value.run, version)) return false;
   }
 
   if (phase !== "battle" && value.battle !== null) return false;
