@@ -1,13 +1,15 @@
 import { once } from "node:events";
 import express from "express";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { hallOfFame } from "../server/hallOfFame.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe("POST /api/hall-of-fame", () => {
+describe("/api/hall-of-fame", () => {
   let server;
   let url;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
+    // Each test starts with an empty in-memory ranking.
+    vi.resetModules();
+    const { hallOfFame } = await import("../server/hallOfFame.js");
     const app = express();
     app.use("/api/hall-of-fame", hallOfFame);
     server = app.listen(0, "127.0.0.1");
@@ -15,7 +17,7 @@ describe("POST /api/hall-of-fame", () => {
     url = `http://127.0.0.1:${server.address().port}/api/hall-of-fame`;
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await new Promise((resolve) => server.close(resolve));
   });
 
@@ -26,6 +28,32 @@ describe("POST /api/hall-of-fame", () => {
   function post(body) {
     return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body });
   }
+
+  it("returns an empty list before the first submission", async () => {
+    const response = await fetch(url);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual([]);
+  });
+
+  it("ranks victories first, then more wins, fewer rounds and finally submission order", async () => {
+    const loss = { ...victory(), outcome: "defeat", wins: 1, rounds: 4 };
+    const firstFastWin = { ...victory(), name: "Zoe" };
+    const slowWin = { ...victory(), rounds: 7 };
+    const betterLoss = { ...victory(), outcome: "defeat", wins: 3, rounds: 6 };
+    const secondFastWin = { ...victory(), name: "Ada" };
+
+    for (const run of [loss, firstFastWin, slowWin, betterLoss, secondFastWin]) {
+      expect((await post(JSON.stringify(run))).status).toBe(201);
+    }
+    expect((await post(JSON.stringify(firstFastWin))).status).toBe(200);
+
+    const response = await fetch(url);
+    expect(response.status).toBe(200);
+    const entries = await response.json();
+    expect(entries.map((entry) => entry.runId)).toEqual([
+      firstFastWin.runId, secondFastWin.runId, slowWin.runId, betterLoss.runId, loss.runId,
+    ]);
+  });
 
   it.each([
     ["victory", 5, 5], ["victory", 5, 7], ["defeat", 0, 3], ["defeat", 4, 7],

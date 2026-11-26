@@ -24,6 +24,16 @@ function validateRun(body) {
   return null;
 }
 
+hallOfFame.get("/", (_req, res) => {
+  const ranked = [...entries.values()].sort((a, b) => {
+    if (a.outcome !== b.outcome) return a.outcome === "victory" ? -1 : 1;
+    if (a.wins !== b.wins) return b.wins - a.wins;
+    // A complete tie keeps the Map's insertion order because Array.sort is stable.
+    return a.rounds - b.rounds;
+  });
+  res.json(ranked);
+});
+
 hallOfFame.post("/", express.json(), (req, res) => {
   const error = validateRun(req.body);
   if (error) return res.status(400).json({ error });
