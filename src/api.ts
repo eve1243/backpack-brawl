@@ -31,3 +31,28 @@ export async function submitRun(run: RunState, outcome: RunOutcome, name: string
     throw new Error("The arena did not confirm this run. Please try again.");
   }
 }
+
+export interface HallOfFameEntry {
+  runId: string;
+  name: string;
+  outcome: RunOutcome;
+  wins: number;
+  rounds: number;
+  createdAt: string;
+}
+
+export async function fetchHallOfFame(signal: AbortSignal): Promise<HallOfFameEntry[]> {
+  const response = await fetch("/api/hall-of-fame", { signal });
+  if (!response.ok) throw new Error(`Could not load the Hall of Fame (${response.status}).`);
+
+  const entries = await response.json();
+  if (!Array.isArray(entries) || !entries.every((entry) =>
+    entry && typeof entry.runId === "string" && typeof entry.name === "string" &&
+    (entry.outcome === "victory" || entry.outcome === "defeat") &&
+    Number.isInteger(entry.wins) && Number.isInteger(entry.rounds) &&
+    typeof entry.createdAt === "string" && Number.isFinite(Date.parse(entry.createdAt))
+  )) {
+    throw new Error("The arena returned an invalid ranking.");
+  }
+  return entries;
+}
