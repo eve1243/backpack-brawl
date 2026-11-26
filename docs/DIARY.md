@@ -211,3 +211,11 @@ Nach einem Refresh wird der passende Screen angezeigt: `/shop`, `/battle` oder `
 **Was, wenn die Antwort verloren geht?** Beim Absenden merkt sich das Spiel den verwendeten Namen. Nach einem Fehler kann man es direkt oder nach einem Neuladen erneut versuchen. Hat der Server den Run bereits gespeichert, liefert er für dieselben Daten den ursprünglichen Eintrag zurück. Andere gültige Daten zur selben ID lehnt er ab. Sobald die Bestätigung im Spielstand steht, zeigt die Ergebnisseite den gespeicherten Namen an.
 
 **Wie entsteht die Rangfolge?** Gewonnene Runs stehen zuerst. Danach zählen mehr Siege und bei gleicher Siegzahl weniger Runden. Bei völligem Gleichstand bleibt der zuerst gespeicherte Run vorne. Die Seite `/hall-of-fame` erklärt diese Reihenfolge und lässt sich auch ohne aktiven Run öffnen.
+
+## How and Why AI
+We used AI with codex and with githubcopilot.
+Github Copilot is able to help with merg conflicts during push and commits or merging the branches. Codex is able to work on the project on the laptop. We used AI because it makes it easier to get into the code, like where can I find the funtion for put in backpack. But it also makes coding easier and faster, even though we have to look through what was changed and why.
+
+## Lessons learned
+
+Sich in ein unbekanntes Projekt einfinden ist am Anfang schwer. Zu verstehe, wo was liegt,wie es verbunden ist und so ist eine kurve, die steil beginnt aber wenn man es versteht kann man richtig in flow sein und es leicht erweitern.
