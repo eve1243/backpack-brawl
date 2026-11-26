@@ -201,3 +201,13 @@ Dadurch läuft das Battle am gespeicherten Frame weiter, statt neu gestartet zu 
 - verbleibende Leben oder erreichte Siege
 
 Nach einem Refresh wird der passende Screen angezeigt: `/shop`, `/battle` oder `/result`.
+
+## B7: Hall of Fame
+
+**Wann zählt ein Run?** Beim fünften Sieg oder beim dritten verlorenen Kampf ist der Run zu Ende. Vier Siege in sieben Runden sind deshalb eine gültige Niederlage. Bei vier Siegen in sechs Runden wäre noch ein Leben übrig. Der Server prüft bei jedem Eintrag, ob Siege und Runden zum gemeldeten Ergebnis passen
+
+**Warum runId?** Zwei Runs können denselben Namen und dasselbe Ergebnis haben. Jeder Run bekommt beim Start eine eigene `runId`, die beim Neuladen erhalten bleibt. Ältere gültige Spielstände bekommen sie beim ersten Laden. Der Server speichert die Einträge unter dieser ID im Arbeitsspeicher. Das reicht für das lokale Spiel und bedeutet, dass die Rangliste nach einem Serverneustart wieder leer ist.
+
+**Was, wenn die Antwort verloren geht?** Beim Absenden merkt sich das Spiel den verwendeten Namen. Nach einem Fehler kann man es direkt oder nach einem Neuladen erneut versuchen. Hat der Server den Run bereits gespeichert, liefert er für dieselben Daten den ursprünglichen Eintrag zurück. Andere gültige Daten zur selben ID lehnt er ab. Sobald die Bestätigung im Spielstand steht, zeigt die Ergebnisseite den gespeicherten Namen an.
+
+**Wie entsteht die Rangfolge?** Gewonnene Runs stehen zuerst. Danach zählen mehr Siege und bei gleicher Siegzahl weniger Runden. Bei völligem Gleichstand bleibt der zuerst gespeicherte Run vorne. Die Seite `/hall-of-fame` erklärt diese Reihenfolge und lässt sich auch ohne aktiven Run öffnen.

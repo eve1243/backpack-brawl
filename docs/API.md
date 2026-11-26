@@ -1,6 +1,6 @@
 # Backpack Brawl API
 
-The local API is a small Express server in `server/index.js`. It listens on port 4200 (override with the `PORT` environment variable). During Vite development, `/api` is proxied to it, so the frontend uses relative URLs such as `/api/opponents?round=1`. All responses are JSON. The server keeps no state: restarting it changes nothing about the answers.
+The local API is a small Express server in `server/index.js`. It listens on port 4200 (override with the `PORT` environment variable). During Vite development, `/api` is proxied to it, so the frontend uses relative URLs such as `/api/opponents?round=1`. All responses are JSON. The Hall of Fame lives in server memory. Restarting the API clears its entries.
 
 ## `GET /api/health`
 
@@ -63,12 +63,72 @@ Every error response has the shape:
 
 An invalid `round` is reported as 400 even when failure is forced. All responses from this endpoint, errors included, arrive after the configured delay.
 
+## `POST /api/hall-of-fame`
+
+Submits one finished run. The browser creates a version 4 UUID (`runId`) when the run starts and keeps it in the save. Send the same ID on every retry.
+
+```sh
+curl -i http://localhost:4200/api/hall-of-fame -H 'Content-Type: application/json' -d '{
+  "runId": "80a25b64-d3ac-47ef-927a-eb243645cb11",
+  "name": "Ada",
+  "outcome": "victory",
+  "wins": 5,
+  "rounds": 6
+}'
+```
+
+All five fields are required. The API trims the name and accepts 1–30 Unicode code points. Both counts must be JSON integers. A `victory` has exactly 5 wins in 5–7 rounds. A `defeat` has 0–4 wins and ends on the third loss, so `rounds` must equal `wins + 3`.
+
+A new entry returns **201 Created**. The server stores the UUID in lowercase and assigns `createdAt` in UTC. An example response follows.
+
+```json
+{
+  "runId": "80a25b64-d3ac-47ef-927a-eb243645cb11",
+  "name": "Ada",
+  "outcome": "victory",
+  "wins": 5,
+  "rounds": 6,
+  "createdAt": "2026-11-26T08:30:00.000Z"
+}
+```
+
+Repeating the request with the same ID, trimmed name and result returns **200 OK** with the original entry and timestamp. This lets the browser retry if the server saved the run but the response was lost.
+
+| Status | When | Example response |
+|---|---|---|
+| 400 | Malformed JSON, missing or invalid fields, or an impossible result | `{"error":"A defeat requires 0 to 4 wins and exactly 3 losses."}` |
+| 409 | An existing run ID is submitted with different, otherwise valid data | `{"error":"This run was already submitted with different data."}` |
+| 413 | The request body exceeds the JSON parser's size limit | `{"error":"Request body is too large."}` |
+
+## `GET /api/hall-of-fame`
+
+```sh
+curl -i http://localhost:4200/api/hall-of-fame
+```
+
+Returns **200 OK** with all entries in rank order. Victories come first, then more wins, then fewer rounds. For a complete tie, the entry first accepted by the server comes first. Array position determines rank, starting at 1. A fresh server returns `[]`.
+
+The example submission produces a one-entry list.
+
+```json
+[
+  {
+    "runId": "80a25b64-d3ac-47ef-927a-eb243645cb11",
+    "name": "Ada",
+    "outcome": "victory",
+    "wins": 5,
+    "rounds": 6,
+    "createdAt": "2026-11-26T08:30:00.000Z"
+  }
+]
+```
+
 ## Environment variables
 
 | Variable | Effect |
 |---|---|
 | `PORT` | Port to listen on (default 4200). The Vite proxy expects 4200. |
-| `API_LATENCY` | Default delay in milliseconds when a request has no `latency` parameter. |
+| `API_LATENCY` | Default delay in milliseconds for opponent requests without a `latency` parameter. |
 | `API_FAIL` | `true` makes every opponent request fail with 503. |
 
 Example: `API_FAIL=true pnpm server`.
