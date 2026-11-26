@@ -38,6 +38,12 @@ function validateRun(value: unknown, version: number): value is RunState {
   if (version < 3 && value.runId === undefined) value.runId = crypto.randomUUID();
   if (typeof value.runId !== "string" || !RUN_ID_PATTERN.test(value.runId)) return false;
 
+  if (value.hallOfFame !== undefined) {
+    if (!isObject(value.hallOfFame)) return false;
+    const { name, submitted } = value.hallOfFame;
+    if (typeof name !== "string" || !name.trim() || [...name].length > 30 || typeof submitted !== "boolean") return false;
+  }
+
   if (!isWholeNumber(value.round) || value.round < 1) return false;
   if (!isWholeNumber(value.gold) || value.gold < 0) return false;
   if (!isWholeNumber(value.lives) || value.lives < 0 || value.lives > 3) return false;

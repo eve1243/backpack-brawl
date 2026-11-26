@@ -58,6 +58,20 @@ describe("B7 run IDs", () => {
   });
 });
 
+describe("B7 Hall of Fame submission", () => {
+  it.each([false, true])("restores the submitted name and its confirmation (%s)", (submitted) => {
+    const game = newGame(123);
+    game.phase = "finished";
+    game.run.wins = 5;
+    game.run.round = 5;
+    game.run.hallOfFame = { name: "Ljilja", submitted };
+    saveGame(game);
+
+    expect(loadSavedGame()?.run.hallOfFame).toEqual({ name: "Ljilja", submitted });
+    expect(newGame(123).run.hallOfFame).toBeUndefined();
+  });
+});
+
 describe("B4 Burn in saved replays", () => {
   function fireReplay() {
     const game = newGame(123);

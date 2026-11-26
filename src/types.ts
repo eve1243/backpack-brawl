@@ -38,6 +38,8 @@ export type Phase = "shop" | "searching" | "battle" | "finished";
 
 export interface RunState {
   readonly runId: string;
+  /** Last attempted name and whether the API confirmed this run. */
+  hallOfFame?: { name: string; submitted: boolean };
   round: number;
   gold: number;
   lives: number;

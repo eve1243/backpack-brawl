@@ -1,4 +1,5 @@
-import type { Opponent } from "./types";
+import type { RunOutcome } from "./run";
+import type { Opponent, RunState } from "./types";
 
 /** Asks the API for this round's opponent; throws with the server's error text on failure. */
 export async function fetchOpponent(round: number): Promise<Opponent> {
@@ -14,4 +15,19 @@ export async function fetchOpponent(round: number): Promise<Opponent> {
   }
 
   return opponent;
+}
+
+export async function submitRun(run: RunState, outcome: RunOutcome, name: string): Promise<void> {
+  const response = await fetch("/api/hall-of-fame", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ runId: run.runId, name, outcome, wins: run.wins, rounds: run.round }),
+  });
+  const entry = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(entry?.error ?? `Could not submit this run (${response.status}).`);
+  }
+  if (entry?.runId !== run.runId.toLowerCase() || entry.name !== name) {
+    throw new Error("The arena did not confirm this run. Please try again.");
+  }
 }
